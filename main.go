@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"errors"
-	"math"
 	"net/http"
 	"log"
 	"github.com/gorilla/websocket"
@@ -21,6 +19,14 @@ func homeRoute(w http.ResponseWriter, r *http.Request) {
 	
 }
 
+func writer(conn *websocket.Conn, messageType int, message []byte) {
+	// message the client
+	if err := conn.WriteMessage(messageType, message); err != nil {
+		log.Println(err)
+			return
+		}
+}
+
 func reader(conn *websocket.Conn) {
 	// listen on this connection for new messages and send messages down that connection
 	for {
@@ -31,11 +37,8 @@ func reader(conn *websocket.Conn) {
 		}
 		log.Println(string(p))
 
-		// echo message back to the client
-		if err := conn.WriteMessage(messageType, []byte("This is a response through the websocket connection from the server")); err != nil {
-			log.Println(err)
-			return
-		}
+		//message back to the client
+		writer(conn, messageType, []byte("This is a response through the websocket connection from the server"))
 	}
 }
 
@@ -45,13 +48,11 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// upgrade http connection to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
-	
 	if err != nil {
 		log.Println(err)
 	}
 
 	log.Println("Client successfully connected to Golang Websocket!")
-
 	reader(ws)
 }
 
@@ -64,19 +65,4 @@ func main() {
 	fmt.Println("Golang WebSockets running...")
 	setupRoutes()
 	log.Fatal(http.ListenAndServe(":8080", nil))
-
-	result, err := sqrt(16)
-	if err != nil {
-		fmt.Println(nil)
-	} else {
-		fmt.Println(result)
-	}
-}
-
-func sqrt(x float64) (float64, error) {
-	if x < 0 {
-		return  0, errors.New("Undefined for negative numbers")
-	}
-
-	return math.Sqrt(x), nil
 }
