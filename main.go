@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"log"
+	"flag"
 	"github.com/gorilla/websocket"
 )
+
+// flag allows you to create cli flags and assign a default
+var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var upgrader = websocket.Upgrader{
 	// empty struct means use defaults
@@ -64,5 +68,7 @@ func setupRoutes() {
 func main() {
 	fmt.Println("Golang WebSockets running...")
 	setupRoutes()
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	flag.Parse()
+	fmt.Println("Listening on:", *addr)
+	log.Fatal(http.ListenAndServe(*addr, nil))
 }
