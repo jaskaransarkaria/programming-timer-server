@@ -51,9 +51,7 @@ func reader(conn *websocket.Conn) {
 
 			var startTimerData StartTimer
 			err = json.Unmarshal(p, &startTimerData)
-			
 			if err != nil {
-				log.Println("UNMARSHALLING ERROR", err)
 				id, err := uuid.NewUUID()
 				if err != nil {
 					log.Println("error from new uuid")
@@ -95,10 +93,4 @@ func main() {
 	flag.Parse()
 	fmt.Println("Listening on:", *addr)
 	log.Fatal(http.ListenAndServe(*addr, nil))
-	// var v interface{}
-	// 	json.Unmarshal(p, &v)
-	// 	data := v.(map[string]interface{})
-
-	// 	log.Println(data)
-
 }
