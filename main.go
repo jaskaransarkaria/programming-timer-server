@@ -10,10 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// StartTimer ... JSON response from the client
 type StartTimer struct {
-	uuid string `json:"uuid"`
-	Duration string `json:"duration"`
-	StartTime string `json:"startTime"`
+	UUID string `json:"uuid"`
+	Duration int64 `json:"duration"`
+	StartTime int64 `json:"startTime"`
 }
 
 // flag allows you to create cli flags and assign a default
@@ -46,27 +47,25 @@ func reader(conn *websocket.Conn) {
 			log.Println(string(p))
 			if err != nil {
 				log.Println(err)
-				return
 			}
 
 			var startTimerData StartTimer
 			err = json.Unmarshal(p, &startTimerData)
 			
 			if err != nil {
+				log.Println("UNMARSHALLING ERROR", err)
 				id, err := uuid.NewUUID()
 				if err != nil {
 					log.Println("error from new uuid")
-					return
 				}
 				log.Println(id.String())
 				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 				writer(conn, messageType, []byte(id.String()))
-				log.Println(startTimerData)		
-				fmt.Println("error:", err)
-				return
 			}
-		log.Println(startTimerData)		
-		return
+			log.Println("JSON recieved")
+			log.Println(startTimerData.UUID)
+			log.Println(startTimerData.Duration)
+			log.Println(startTimerData.StartTime)
 		}
 }
 
