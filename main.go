@@ -10,12 +10,28 @@ import (
 	"github.com/google/uuid"
 )
 
+// User is ...
+type user struct {
+	UUID string
+}
+
+// Session is ...
+type session struct {
+	sessionID string
+	duration int64
+	startTime int64
+	endTime int64
+	users []user
+}
+
 // StartTimer ... JSON response from the client
-type StartTimer struct {
+type startTimer struct {
 	UUID string `json:"uuid"`
 	Duration int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
+
+var sessions []session
 
 // flag allows you to create cli flags and assign a default
 var addr = flag.String("addr", "localhost:8080", "http service address")
@@ -28,8 +44,12 @@ var upgrader = websocket.Upgrader{
 
 
 func homeRoute(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "home route")
-	
+	fmt.Fprintf(w, "home route")	
+}
+
+func (session *session) AddUser(user user) []user {
+    session.users = append(session.users, user)
+    return session.users
 }
 
 func writer(conn *websocket.Conn, messageType int, message []byte) {
@@ -49,7 +69,7 @@ func reader(conn *websocket.Conn) {
 				log.Println(err)
 			}
 
-			var startTimerData StartTimer
+			var startTimerData startTimer
 			err = json.Unmarshal(p, &startTimerData)
 			if err != nil {
 				id, err := uuid.NewUUID()
@@ -60,10 +80,22 @@ func reader(conn *websocket.Conn) {
 				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 				writer(conn, messageType, []byte(id.String()))
 			}
+
+		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
+			newUser := user{ UUID: startTimerData.UUID}
+			newSession := session{
+				sessionID: "random",
+				duration: startTimerData.Duration,
+				startTime: startTimerData.StartTime,
+				endTime: startTimerData.Duration + startTimerData.StartTime,
+			}
+			newSession.AddUser(newUser)
+			sessions = append(sessions, newSession)
 			log.Println("JSON recieved")
-			log.Println(startTimerData.UUID)
-			log.Println(startTimerData.Duration)
-			log.Println(startTimerData.StartTime)
+			log.Println(newUser)
+			log.Println("newSession", newSession)
+			log.Println("sessions", sessions)
+			}
 		}
 }
 
@@ -78,7 +110,6 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Client successfully connected to Golang Websocket!")
-	// either read json or read message
 	reader(ws)
 }
 
