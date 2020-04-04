@@ -42,14 +42,22 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-
-func homeRoute(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "home route")	
-}
-
 func (session *session) AddUser(user user) []user {
     session.users = append(session.users, user)
     return session.users
+}
+
+func createNewUserAndSession(newSessionData startTimer) (user, session) {
+	var newUser = user{ UUID: newSessionData.UUID }
+	var newSession = session{
+				sessionID: "random",
+				duration: newSessionData.Duration,
+				startTime: newSessionData.StartTime,
+				endTime: newSessionData.Duration + newSessionData.StartTime,
+			}
+	newSession.AddUser(newUser)
+	sessions = append(sessions, newSession)
+	return newUser, newSession
 }
 
 func writer(conn *websocket.Conn, messageType int, message []byte) {
@@ -82,17 +90,8 @@ func reader(conn *websocket.Conn) {
 			}
 
 		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
-			newUser := user{ UUID: startTimerData.UUID}
-			newSession := session{
-				sessionID: "random",
-				duration: startTimerData.Duration,
-				startTime: startTimerData.StartTime,
-				endTime: startTimerData.Duration + startTimerData.StartTime,
-			}
-			newSession.AddUser(newUser)
-			sessions = append(sessions, newSession)
-			log.Println("JSON recieved")
-			log.Println(newUser)
+			newUser, newSession := createNewUserAndSession(startTimerData)
+			log.Println("new user id", newUser)
 			log.Println("newSession", newSession)
 			log.Println("sessions", sessions)
 			}
@@ -102,19 +101,16 @@ func reader(conn *websocket.Conn) {
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	// this is for CORS -  allow all origin
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
-
 	// upgrade http connection to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
-
 	log.Println("Client successfully connected to Golang Websocket!")
 	reader(ws)
 }
 
 func setupRoutes() {
-	http.HandleFunc("/", homeRoute)
 	http.HandleFunc("/ws", wsEndpoint)
 }
 
