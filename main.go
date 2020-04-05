@@ -7,7 +7,9 @@ import (
 	"log"
 	"flag"
 	"github.com/gorilla/websocket"
-	"github.com/google/uuid"
+	"math/rand"
+	"encoding/hex"
+	"errors"
 )
 
 // User is ...
@@ -17,16 +19,15 @@ type user struct {
 
 // Session is ...
 type session struct {
-	sessionID string
-	duration int64
-	startTime int64
-	endTime int64
-	users []user
+	SessionID string
+	Duration int64
+	StartTime int64
+	EndTime int64
+	Users []user
 }
 
 // StartTimer ... JSON response from the client
-type startTimer struct {
-	UUID string `json:"uuid"`
+type startTimerReq struct {
 	Duration int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
@@ -43,28 +44,48 @@ var upgrader = websocket.Upgrader{
 }
 
 func (session *session) AddUser(user user) []user {
-    session.users = append(session.users, user)
-    return session.users
+    session.Users = append(session.Users, user)
+    return session.Users
+	}
+
+func getIDLength(typeOfID string) (int8, error) {
+		if (typeOfID == "session") {
+		return 2, nil // equals 4 characters long
+	} 
+	if (typeOfID == "user") {
+		return 4, nil // equals 8 characters long
+	}
+	return -1, errors.New("Invalid typeofID as parameter")
 }
 
-func createNewUserAndSession(newSessionData startTimer) (user, session) {
-	var newUser = user{ UUID: newSessionData.UUID }
+func generateRandomID(typeOfID string) string {
+	length, err := getIDLength(typeOfID)
+		if err != nil {
+			log.Println("err generating ID", err)
+		}
+	b := make([]byte, length)
+	rand.Read(b) 
+	s := hex.EncodeToString(b)
+	return s
+}
+
+func createNewUserAndSession(newSessionData startTimerReq) session {
+	var newUser = user{ UUID: generateRandomID("user") }
 	var newSession = session{
-				sessionID: "random",
-				duration: newSessionData.Duration,
-				startTime: newSessionData.StartTime,
-				endTime: newSessionData.Duration + newSessionData.StartTime,
+				SessionID: generateRandomID("session"),
+				Duration: newSessionData.Duration,
+				StartTime: newSessionData.StartTime,
+				EndTime: newSessionData.Duration + newSessionData.StartTime,
 			}
 	newSession.AddUser(newUser)
 	sessions = append(sessions, newSession)
-	return newUser, newSession
+	return newSession
 }
 
 func writer(conn *websocket.Conn, messageType int, message []byte) {
 	// message the client
 	if err := conn.WriteMessage(messageType, message); err != nil {
 		log.Println(err)
-			return
 		}
 }
 
@@ -76,24 +97,17 @@ func reader(conn *websocket.Conn) {
 			if err != nil {
 				log.Println(err)
 			}
-
-			var startTimerData startTimer
+			var startTimerData startTimerReq
 			err = json.Unmarshal(p, &startTimerData)
 			if err != nil {
-				id, err := uuid.NewUUID()
-				if err != nil {
-					log.Println("error from new uuid")
-				}
-				log.Println(id.String())
 				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
-				writer(conn, messageType, []byte(id.String()))
 			}
 
 		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
-			newUser, newSession := createNewUserAndSession(startTimerData)
-			log.Println("new user id", newUser)
-			log.Println("newSession", newSession)
-			log.Println("sessions", sessions)
+			newSession := createNewUserAndSession(startTimerData)
+			newSessionRes, _ := json.Marshal(newSession)
+			writer(conn, messageType, newSessionRes)
+			log.Println("SESSION RESPONSE", string(newSessionRes))
 			}
 		}
 }
