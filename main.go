@@ -137,6 +137,8 @@ func infoHTTPEndpoint(w http.ResponseWriter, r *http.Request){
 }
 	// post endpoint that recieves meta data about the session we want to create
 
+	// func enableCors(w *http.ResponseWriter) { 	(*w).Header().Set("Access-Control-Allow-Origin", "*") }
+
 func newSessionHTTPEndpoint(w http.ResponseWriter, r *http.Request) {
 	var timerRequest StartTimerReq
 	var requestBody = r.Body
@@ -144,7 +146,11 @@ func newSessionHTTPEndpoint(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(requestBody).Decode(&timerRequest)
 	newSession := createNewUserAndSession(timerRequest)
 	newSessionRes, _ := json.Marshal(newSession)
+
+	// (*w).Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(newSessionRes)
+
 }
 
 func setupRoutes() {
