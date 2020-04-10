@@ -32,6 +32,10 @@ type startTimerReq struct {
 	StartTime int64 `json:"startTime"`
 }
 
+type joinExistingSession struct {
+	joinSession string `json:"joinSession"`
+}
+
 var sessions []session
 
 // flag allows you to create cli flags and assign a default
@@ -82,6 +86,8 @@ func createNewUserAndSession(newSessionData startTimerReq) session {
 	return newSession
 }
 
+// func readJson()
+
 func writer(conn *websocket.Conn, messageType int, message []byte) {
 	// message the client
 	if err := conn.WriteMessage(messageType, message); err != nil {
@@ -99,10 +105,12 @@ func reader(conn *websocket.Conn) {
 			}
 			var startTimerData startTimerReq
 			err = json.Unmarshal(p, &startTimerData)
+			// JSON is not sent on initial connection
 			if err != nil {
 				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 			}
-
+		
+		
 		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
 			newSession := createNewUserAndSession(startTimerData)
 			newSessionRes, _ := json.Marshal(newSession)
@@ -124,8 +132,20 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	reader(ws)
 }
 
+func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
+	// post endpoint that recieves meta data about the session we want to create
+	//open the http req
+	r.Body()
+	//read the json
+	// create the session
+	
+	http.ResponseWriter()
+	// returns JSON payload of new session
+}
+
 func setupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
+	http.HandleFunc("/newsession", newSessionEndpoint)
 }
 
 func main() {
