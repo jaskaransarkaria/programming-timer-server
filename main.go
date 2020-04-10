@@ -27,7 +27,7 @@ type session struct {
 }
 
 // StartTimer ... JSON response from the client
-type startTimerReq struct {
+type StartTimerReq struct {
 	Duration int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
@@ -55,7 +55,7 @@ func (session *session) AddUser(user user) []user {
 func getIDLength(typeOfID string) (int8, error) {
 		if (typeOfID == "session") {
 		return 2, nil // equals 4 characters long
-	} 
+	}
 	if (typeOfID == "user") {
 		return 4, nil // equals 8 characters long
 	}
@@ -68,12 +68,12 @@ func generateRandomID(typeOfID string) string {
 			log.Println("err generating ID", err)
 		}
 	b := make([]byte, length)
-	rand.Read(b) 
+	rand.Read(b)
 	s := hex.EncodeToString(b)
 	return s
 }
 
-func createNewUserAndSession(newSessionData startTimerReq) session {
+func createNewUserAndSession(newSessionData StartTimerReq) session {
 	var newUser = user{ UUID: generateRandomID("user") }
 	var newSession = session{
 				SessionID: generateRandomID("session"),
@@ -103,14 +103,14 @@ func reader(conn *websocket.Conn) {
 			if err != nil {
 				log.Println(err)
 			}
-			var startTimerData startTimerReq
+			var startTimerData StartTimerReq
 			err = json.Unmarshal(p, &startTimerData)
 			// JSON is not sent on initial connection
 			if err != nil {
 				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 			}
-		
-		
+
+
 		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
 			newSession := createNewUserAndSession(startTimerData)
 			newSessionRes, _ := json.Marshal(newSession)
@@ -132,20 +132,24 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	reader(ws)
 }
 
-func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
+func infoHTTPEndpoint(w http.ResponseWriter, r *http.Request){
+
+}
 	// post endpoint that recieves meta data about the session we want to create
-	//open the http req
-	r.Body()
-	//read the json
-	// create the session
-	
-	http.ResponseWriter()
-	// returns JSON payload of new session
+
+func newSessionHTTPEndpoint(w http.ResponseWriter, r *http.Request) {
+	var timerRequest StartTimerReq
+	var requestBody = r.Body
+
+	json.NewDecoder(requestBody).Decode(&timerRequest)
+	newSession := createNewUserAndSession(timerRequest)
+	newSessionRes, _ := json.Marshal(newSession)
+	w.Write(newSessionRes)
 }
 
 func setupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
-	http.HandleFunc("/newsession", newSessionEndpoint)
+	http.HandleFunc("/session/new", newSessionHTTPEndpoint)
 }
 
 func main() {
