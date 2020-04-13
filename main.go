@@ -20,9 +20,11 @@ type User struct {
 // Session is ...
 type Session struct {
 	SessionID string
+	CurrentDriver string
 	Duration int64
 	StartTime int64
 	EndTime int64
+	PreviousDrivers []User
 	Users []User
 }
 
@@ -89,6 +91,7 @@ func createNewUserAndSession(newSessionData StartTimerReq) Session {
 	var newUser = User{ UUID: generateRandomID("user") }
 	var newSession = Session{
 				SessionID: generateRandomID("session"),
+				CurrentDriver: newUser.UUID
 				Duration: newSessionData.Duration,
 				StartTime: newSessionData.StartTime,
 				EndTime: newSessionData.Duration + newSessionData.StartTime,
