@@ -13,30 +13,30 @@ import (
 )
 
 // User is ...
-type user struct {
+type User struct {
 	UUID string
 }
 
 // Session is ...
-type session struct {
+type Session struct {
 	SessionID string
 	Duration int64
 	StartTime int64
 	EndTime int64
-	Users []user
+	Users []User
 }
 
-// StartTimer ... JSON response from the client
+// StartTimer ... JSON request from the client
 type StartTimerReq struct {
 	Duration int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
 
-type joinExistingSession struct {
-	joinSession string `json:"joinSession"`
+type ExistingSessionReq struct {
+	JoinSessionID string `json:"joinSession"`
 }
 
-var sessions []session
+var sessions []Session
 
 // flag allows you to create cli flags and assign a default
 var addr = flag.String("addr", "localhost:8080", "http service address")
@@ -47,7 +47,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func (session *session) AddUser(user user) []user {
+func (session *Session) AddUser(user User) []User {
     session.Users = append(session.Users, user)
     return session.Users
 	}
@@ -73,9 +73,21 @@ func generateRandomID(typeOfID string) string {
 	return s
 }
 
-func createNewUserAndSession(newSessionData StartTimerReq) session {
-	var newUser = user{ UUID: generateRandomID("user") }
-	var newSession = session{
+func getExistingSession(desiredSessionID string) (Session, error) {
+	// iterate through sessions
+	var matchedSession Session
+	for _, session :=  range sessions {
+		if session.SessionID == desiredSessionID {
+			matchedSession = session
+			return matchedSession, nil
+		}
+	}
+	return matchedSession, errors.New("There are no sessions with the id:" + desiredSessionID)
+}
+
+func createNewUserAndSession(newSessionData StartTimerReq) Session {
+	var newUser = User{ UUID: generateRandomID("user") }
+	var newSession = Session{
 				SessionID: generateRandomID("session"),
 				Duration: newSessionData.Duration,
 				StartTime: newSessionData.StartTime,
@@ -86,7 +98,15 @@ func createNewUserAndSession(newSessionData StartTimerReq) session {
 	return newSession
 }
 
-// func readJson()
+func joinExistingSession(joinExistingSessionData ExistingSessionReq) (Session, error) {
+		var newUser = User{ UUID: generateRandomID("user") }
+		matchedSession, err := getExistingSession(joinExistingSessionData.JoinSessionID)
+		if err != nil {
+			return matchedSession, err
+		}
+		matchedSession.AddUser(newUser)
+		return matchedSession, nil
+}
 
 func writer(conn *websocket.Conn, messageType int, message []byte) {
 	// message the client
@@ -103,20 +123,7 @@ func reader(conn *websocket.Conn) {
 			if err != nil {
 				log.Println(err)
 			}
-			var startTimerData StartTimerReq
-			err = json.Unmarshal(p, &startTimerData)
-			// JSON is not sent on initial connection
-			if err != nil {
-				writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
-			}
-
-
-		if (startTimerData.Duration != 0 && startTimerData.StartTime != 0) {
-			newSession := createNewUserAndSession(startTimerData)
-			newSessionRes, _ := json.Marshal(newSession)
-			writer(conn, messageType, newSessionRes)
-			log.Println("SESSION RESPONSE", string(newSessionRes))
-			}
+			writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 		}
 }
 
@@ -132,30 +139,44 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	reader(ws)
 }
 
-func infoHTTPEndpoint(w http.ResponseWriter, r *http.Request){
+func enableCors(w *http.ResponseWriter) {(*w).Header().Set("Access-Control-Allow-Origin", "*")}
 
-}
-	// post endpoint that recieves meta data about the session we want to create
-
-	// func enableCors(w *http.ResponseWriter) { 	(*w).Header().Set("Access-Control-Allow-Origin", "*") }
-
-func newSessionHTTPEndpoint(w http.ResponseWriter, r *http.Request) {
+func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	var timerRequest StartTimerReq
 	var requestBody = r.Body
+	enableCors(&w)
+	
+	err := json.NewDecoder(requestBody).Decode(&timerRequest)
 
-	json.NewDecoder(requestBody).Decode(&timerRequest)
+	if err != nil {
+		log.Println(err)
+	}
+
 	newSession := createNewUserAndSession(timerRequest)
 	newSessionRes, _ := json.Marshal(newSession)
-
-	// (*w).Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(newSessionRes)
+	// json.NewEncoder(w).Encode(newSessionRes)
+}
 
+func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
+	var sessionRequest ExistingSessionReq
+	var requestBody = r.Body
+	enableCors(&w)
+
+	json.NewDecoder(requestBody).Decode(&sessionRequest)
+	matchedSession, err := joinExistingSession(sessionRequest)
+	if err != nil {
+		bufferedErr, _ := json.Marshal(err)
+		w.Write(bufferedErr)
+	}
+	bufferedExistingSession, _ := json.Marshal(matchedSession)
+	w.Write(bufferedExistingSession)
 }
 
 func setupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
-	http.HandleFunc("/session/new", newSessionHTTPEndpoint)
+	http.HandleFunc("/session/new", newSessionEndpoint)
+	http.HandleFunc("/session/join", joinSessionEndpoint)
 }
 
 func main() {
