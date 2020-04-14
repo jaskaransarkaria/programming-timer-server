@@ -20,7 +20,7 @@ type User struct {
 // Session is ...
 type Session struct {
 	SessionID string
-	CurrentDriver string
+	CurrentDriver User
 	Duration int64
 	StartTime int64
 	EndTime int64
@@ -73,6 +73,30 @@ func generateRandomID(typeOfID string) string {
 	rand.Read(b)
 	s := hex.EncodeToString(b)
 	return s
+}
+
+func selectNewDriver(*session Session) Session {
+	// choose a uuid from the users that's not the currentDriver
+	for _, user := range session.Users {
+		if user.UUID != session.CurrentDriver {
+			session.CurrentDriver = user
+		} 
+	}
+	return session
+}
+
+func changeDriver(*session Session) Session {
+	if len(session.PreviousDrivers) == len(session.Users) {
+		session.PreviousDrivers[:0]
+		return selectNewDriver(&session)
+	}
+	session.PreviousDrivers = append(session.PreviousDrivers, session.CurrentDriver)
+  return selectNewDriver(&session)
+}
+
+func handleTimerEnd(*session Session) Session {
+	changeDriver(&session)
+	// send new session state down to all the users via websocket
 }
 
 func getExistingSession(desiredSessionID string) (Session, error) {
