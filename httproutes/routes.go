@@ -91,6 +91,17 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Write(bufferedExistingSession)
 }
 
+func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {
+	var sessionRequest session.ExistingSessionReq
+	var requestBody = r.Body
+	enableCors(&w)
+
+	json.NewDecoder(requestBody).Decode(&sessionRequest)
+	matchedSession, err := joinExistingSession(sessionRequest)
+
+	session.HandleTimerEnd(matchedSession)
+}
+
 func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
@@ -105,6 +116,7 @@ func SetupRoutes() {
 				EndTime: 123456,
 				Users: []session.User{newUser},
 			}
-		session.HandleTimerEnd(newSession)
 	})
+
+	http.HandleFunc("session/update", updateSessionEndpoint)
 }
