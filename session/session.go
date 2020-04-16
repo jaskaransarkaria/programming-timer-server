@@ -1,11 +1,11 @@
-package internal
+package session
+
 import (
 	"fmt"
 	"log"
 	"math/rand"
 	"encoding/hex"
 	"errors"
-	
 )
 
 // User is ...
