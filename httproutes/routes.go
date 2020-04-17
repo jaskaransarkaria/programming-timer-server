@@ -16,12 +16,12 @@ var upgrader = websocket.Upgrader{
 
 func joinExistingSession(joinExistingSessionData session.ExistingSessionReq) (session.Session, error) {
 		var newUser = session.User{ UUID: session.GenerateRandomID("user") }
-		matchedSession, err := session.GetExistingSession(joinExistingSessionData.JoinSessionID)
+		matchedSessionIdx, err := session.GetExistingSession(joinExistingSessionData.JoinSessionID)
 		if err != nil {
-			return matchedSession, err
+			return session.Sessions[matchedSessionIdx], err
 		}
-		matchedSession.AddUser(newUser)
-		return matchedSession, nil
+		session.Sessions[matchedSessionIdx].AddUser(newUser)
+		return session.Sessions[matchedSessionIdx], nil
 }
 
 func writer(conn *websocket.Conn, messageType int, message []byte) {
@@ -42,6 +42,13 @@ func reader(conn *websocket.Conn) { // need to make each connection a go routine
 				conn.Close()
 			}
 			writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
+
+			var sessionToUpdate session.Session
+			jsonErr := conn.ReadJSON(&sessionToUpdate)
+			if jsonErr != nil {
+				log.Println(jsonErr)
+			}
+		  sessionToUpdate.HandleTimerEnd()
 		}
 }
 
@@ -73,7 +80,6 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	newSession := session.CreateNewUserAndSession(timerRequest)
 	newSessionRes, _ := json.Marshal(newSession)
 	w.Write(newSessionRes)
-	// json.NewEncoder(w).Encode(newSessionRes)
 }
 
 func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -91,32 +97,24 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Write(bufferedExistingSession)
 }
 
-func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {
-	var sessionRequest session.ExistingSessionReq
+func updateSessionEndpoint(w http.ResponseWriter,r *http.Request) {
+	var sessionRequest session.Session
 	var requestBody = r.Body
 	enableCors(&w)
 
 	json.NewDecoder(requestBody).Decode(&sessionRequest)
-	matchedSession, err := joinExistingSession(sessionRequest)
 
-	session.HandleTimerEnd(matchedSession)
+	matchedSessionIdx, err := session.GetExistingSession(sessionRequest.SessionID)
+	if err != nil {
+		log.Println(err)
+	}
+	session.Sessions[matchedSessionIdx].HandleTimerEnd()
+	log.Printf("%+v\n", session.Sessions[matchedSessionIdx])
 }
 
 func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
-	http.HandleFunc("/session/test", func(w http.ResponseWriter, r *http.Request) {
-			var newUser = session.User{ UUID: session.GenerateRandomID("user") }
-		var newSession = session.Session{
-				SessionID: session.GenerateRandomID("session"),
-				CurrentDriver: newUser,
-				Duration: 123,
-				StartTime: 123,
-				EndTime: 123456,
-				Users: []session.User{newUser},
-			}
-	})
-
-	http.HandleFunc("session/update", updateSessionEndpoint)
+	http.HandleFunc("/session/update", updateSessionEndpoint)
 }

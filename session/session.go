@@ -1,11 +1,11 @@
 package session
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 )
 
 // User is ...
@@ -34,12 +34,11 @@ type ExistingSessionReq struct {
 	JoinSessionID string `json:"joinSession"`
 }
 
-var sessions []Session
+var Sessions []Session
 
 
-func (session *Session) AddUser(user User) []User {
-    session.Users = append(session.Users, user)
-    return session.Users
+func (session *Session) AddUser(user User) {
+		session.Users = append(session.Users, user)
 	}
 
 func getIDLength(typeOfID string) (int8, error) {
@@ -63,43 +62,46 @@ func GenerateRandomID(typeOfID string) string {
 	return s
 }
 
-func selectNewDriver(session Session) Session {
+func (session *Session) selectNewDriver() Session {
 	// choose a uuid from the users that's not the currentDriver
 	for _, user := range session.Users {
 		if user != session.CurrentDriver {
 			session.CurrentDriver = user
 		} 
 	}
-	return session
+	return *session
 }
 
-func changeDriver(session Session) Session {
+func (session *Session) changeDriver() Session {
 	if len(session.PreviousDrivers) == len(session.Users) {
 		session.PreviousDrivers = session.PreviousDrivers[:0]
-		return selectNewDriver(session)
+		return session.selectNewDriver()
 	}
 	session.PreviousDrivers = append(session.PreviousDrivers, session.CurrentDriver)
-  return selectNewDriver(session)
-}
-
-func HandleTimerEnd(session Session) Session {
-	updatedSession := changeDriver(session)
-	fmt.Printf("%+v\n", updatedSession)
-	return updatedSession
-	// send new session state down to all the users via websocket
+	fmt.Printf("%+v\n", Sessions)
+  return session.selectNewDriver()
 }
 
 
-func GetExistingSession(desiredSessionID string) (Session, error) {
+func (session *Session) HandleTimerEnd() Session {
+	// update the session so that it has the most recent number of users
+	updatedSessionIdx, err := GetExistingSession(session.SessionID)
+	if err != nil  {
+		log.Println(err)
+	}
+	Sessions[updatedSessionIdx].changeDriver()
+	// fmt.Printf("%+v\n", Sessions)
+	return Sessions[updatedSessionIdx]
+}
+
+func GetExistingSession(desiredSessionID string) (int, error) {
 	// iterate through sessions
-	var matchedSession Session
-	for _, session :=  range sessions {
+	for idx, session :=  range Sessions {
 		if session.SessionID == desiredSessionID {
-			matchedSession = session
-			return matchedSession, nil
+			return idx, nil
 		}
 	}
-	return matchedSession, errors.New("There are no sessions with the id:" + desiredSessionID)
+	return -1, errors.New("There are no sessions with the id:" + desiredSessionID)
 }
 
 func CreateNewUserAndSession(newSessionData StartTimerReq) Session {
@@ -112,6 +114,7 @@ func CreateNewUserAndSession(newSessionData StartTimerReq) Session {
 				EndTime: newSessionData.Duration + newSessionData.StartTime,
 			}
 	newSession.AddUser(newUser)
-	sessions = append(sessions, newSession)
+	Sessions = append(Sessions, newSession)
 	return newSession
 }
+
