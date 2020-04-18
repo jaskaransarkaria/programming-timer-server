@@ -49,7 +49,7 @@ func reader(conn *websocket.Conn) { // need to make each connection a go routine
 			if jsonErr != nil {
 				log.Println(jsonErr)
 			}
-		  sessionToUpdate.HandleTimerEnd()
+			sessionToUpdate.HandleTimerEnd()
 		}
 }
 
@@ -61,7 +61,31 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+
+
 	log.Println("Client successfully connected to Golang Websocket!")
+	
+	// when they connect the client should send their session and their uid too
+	// that way I can link uid to connection.
+	// then on handleEndTimer() I can just grab the session from the session id 
+	// and loop over each user's connection
+	// struct {
+	// 	sessionID: blahhh
+	// 	users: [{
+	// 		uuid,
+	// 		connection
+	// 	},
+	// 	{
+	// 		uuid,
+	// 		connection
+	// 	},
+	// 	]
+	// }
+	// and send them a message
+
+
+	// reader ran as a goroute from main? But it will be reading the message from the channel
+	// write as a go routine
 	reader(ws)
 }
 
@@ -75,6 +99,8 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+	defer r.Body.Close()
+	
 	newUser := session.User{ UUID: session.GenerateRandomID("user") }
 	newSession := session.CreateNewUserAndSession(timerRequest, newUser)
 	resp := session.InitSessionResponse{newSession, newUser}
@@ -86,14 +112,20 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	var sessionRequest session.ExistingSessionReq
 	var requestBody = r.Body
 	enableCors(&w)
+	
+	err := json.NewDecoder(requestBody).Decode(&sessionRequest)
+	if err != nil {
+		log.Println(err)
+	}
+	defer r.Body.Close()
 
-	json.NewDecoder(requestBody).Decode(&sessionRequest)
 	var newUser = session.User{ UUID: session.GenerateRandomID("user") }
 	matchedSession, err := joinExistingSession(sessionRequest, newUser)
 	if err != nil {
 		bufferedErr, _ := json.Marshal(err)
 		w.Write(bufferedErr)
 	}
+	
 	resp := session.InitSessionResponse{matchedSession, newUser}
 	bufferedExistingSession, _ := json.Marshal(resp)
 	w.Write(bufferedExistingSession)
@@ -105,3 +137,7 @@ func SetupRoutes() {
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
 }
+
+
+// think about if I need to re-architect the way I read and write messages? 
+// Using goroutines and Channels?
