@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"encoding/hex"
 	"errors"
-	"fmt"
 )
 
 // User is ...
@@ -22,6 +21,11 @@ type Session struct {
 	EndTime int64
 	PreviousDrivers []User
 	Users []User
+}
+
+type InitSessionResponse struct {
+	Session Session
+	User User
 }
 
 // StartTimer ... JSON request from the client
@@ -69,6 +73,7 @@ func (session *Session) selectNewDriver() Session {
 			session.CurrentDriver = user
 		} 
 	}
+	log.Println("driver-changed", session)
 	return *session
 }
 
@@ -78,7 +83,6 @@ func (session *Session) changeDriver() Session {
 		return session.selectNewDriver()
 	}
 	session.PreviousDrivers = append(session.PreviousDrivers, session.CurrentDriver)
-	fmt.Printf("%+v\n", Sessions)
   return session.selectNewDriver()
 }
 
@@ -104,8 +108,7 @@ func GetExistingSession(desiredSessionID string) (int, error) {
 	return -1, errors.New("There are no sessions with the id:" + desiredSessionID)
 }
 
-func CreateNewUserAndSession(newSessionData StartTimerReq) Session {
-	var newUser = User{ UUID: GenerateRandomID("user") }
+func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session {
 	var newSession = Session{
 				SessionID: GenerateRandomID("session"),
 				CurrentDriver: newUser,
