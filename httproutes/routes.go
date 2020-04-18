@@ -37,6 +37,12 @@ func reader(conn *websocket.Conn) { // need to make each connection a go routine
 	for {
 			messageType, p, err := conn.ReadMessage()
 			log.Println(string(p))
+			// find session
+			sessionIdx := session.FindSession(string(p))
+			// find the user 
+			userIdx := session.FindUser(sessionIdx, string(p))
+			// add conn to user
+			session.Sessions[sessionIdx].Users[userIdx] = *conn
 			if err != nil {
 				log.Println(err)
 				// hear we are actually listening for close connections shown in err
@@ -64,26 +70,6 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 
 	log.Println("Client successfully connected to Golang Websocket!")
-	
-	// when they connect the client should send their session and their uid too
-	// that way I can link uid to connection.
-	// then on handleEndTimer() I can just grab the session from the session id 
-	// and loop over each user's connection
-	// struct {
-	// 	sessionID: blahhh
-	// 	users: [{
-	// 		uuid,
-	// 		connection
-	// 	},
-	// 	{
-	// 		uuid,
-	// 		connection
-	// 	},
-	// 	]
-	// }
-	// and send them a message
-
-
 	// reader ran as a goroute from main? But it will be reading the message from the channel
 	// write as a go routine
 	reader(ws)

@@ -5,11 +5,13 @@ import (
 	"math/rand"
 	"encoding/hex"
 	"errors"
+	"github.com/gorilla/websocket"
 )
 
 // User is ...
 type User struct {
 	UUID string
+	Conn *websocket.Conn
 }
 
 // Session is ...
@@ -94,8 +96,27 @@ func (session *Session) HandleTimerEnd() Session {
 		log.Println(err)
 	}
 	Sessions[updatedSessionIdx].changeDriver()
-	// fmt.Printf("%+v\n", Sessions)
 	return Sessions[updatedSessionIdx]
+}
+
+func FindSession(uuid string) int {
+	for idx, session := range Sessions {
+		for _, user := range session.Users {
+			if user.UUID == uuid {
+				return idx
+			}
+		}
+	}
+	return -1
+}
+
+func FindUser(sessionIdx int, uuid string) int {
+	for idx, user := range Sessions[sessionIdx].Users {
+		if user.UUID == uuid {
+			return idx
+		}
+	}
+	return -1
 }
 
 func GetExistingSession(desiredSessionID string) (int, error) {
