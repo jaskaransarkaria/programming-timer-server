@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/gorilla/websocket"
+	"time"
 )
 
 // User is ...
@@ -87,6 +88,11 @@ func (session *Session) changeDriver() Session {
   return session.selectNewDriver()
 }
 
+func (session *Session) resetTimer() {
+	var nowMsec = time.Now().UnixNano() / int64(time.Millisecond)
+	session.StartTime = nowMsec
+	session.EndTime = nowMsec + session.Duration
+}
 
 func (session *Session) HandleTimerEnd() (Session, error) {
 	// update the session so that it has the most recent number of users
@@ -95,7 +101,7 @@ func (session *Session) HandleTimerEnd() (Session, error) {
 		return Session{}, err
 	}
 	Sessions[updatedSessionIdx].changeDriver()
-	// send message to users in the session
+	Sessions[updatedSessionIdx].resetTimer()
 	return Sessions[updatedSessionIdx], nil
 }
 
