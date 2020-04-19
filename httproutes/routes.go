@@ -35,25 +35,25 @@ func writer(conn *websocket.Conn, messageType int, message []byte) {
 func reader(conn *websocket.Conn) { // need to make each connection a go routine
 	// listen on this connection for new messages and send messages down that connection
 	for {
-			messageType, p, err := conn.ReadMessage()
-			log.Println(string(p))
-			session.AddUserConnToSession(string(p), conn)
-			if err != nil {
-				log.Println(err)
-				// hear we are actually listening for close connections shown in err
-				conn.Close()
-			}
+		messageType, p, err := conn.ReadMessage()
+		log.Println(string(p))
+		session.AddUserConnToSession(string(p), conn)
+		if err != nil {
+			log.Println("Connection closing:", err)
+			// hear we are actually listening for close connections shown in err
+			conn.Close()
+		}
 			writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 
 			var sessionToUpdate session.Session
 			jsonErr := conn.ReadJSON(&sessionToUpdate)
 			if jsonErr != nil {
-				log.Println(jsonErr)
+				log.Println("jsonError", jsonErr)
 				return
 			}
 			updatedSession, updateErr := sessionToUpdate.HandleTimerEnd()
 			if updateErr != nil {
-				log.Println(updateErr)
+				log.Println("updateError", updateErr)
 				return
 			}
 			for _, user := range updatedSession.Users {

@@ -81,7 +81,7 @@ func (session *Session) selectNewDriver() Session {
 
 func (session *Session) changeDriver() Session {
 	if len(session.PreviousDrivers) == len(session.Users) {
-		session.PreviousDrivers = session.PreviousDrivers[:0]
+		session.PreviousDrivers = nil
 		return session.selectNewDriver()
 	}
 	session.PreviousDrivers = append(session.PreviousDrivers, session.CurrentDriver)
