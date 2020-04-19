@@ -75,7 +75,6 @@ func (session *Session) selectNewDriver() Session {
 			session.CurrentDriver = user
 		} 
 	}
-	log.Println("driver-changed", session)
 	return *session
 }
 
@@ -89,17 +88,25 @@ func (session *Session) changeDriver() Session {
 }
 
 
-func (session *Session) HandleTimerEnd() Session {
+func (session *Session) HandleTimerEnd() (Session, error) {
 	// update the session so that it has the most recent number of users
 	updatedSessionIdx, err := GetExistingSession(session.SessionID)
 	if err != nil  {
-		log.Println(err)
+		return Session{}, err
 	}
 	Sessions[updatedSessionIdx].changeDriver()
-	return Sessions[updatedSessionIdx]
+	// send message to users in the session
+	return Sessions[updatedSessionIdx], nil
 }
 
-func FindSession(uuid string) int {
+func AddUserConnToSession(uuid string, conn *websocket.Conn) {
+	sessionIdx := findSession(uuid)
+	userIdx := findUser(sessionIdx, uuid)
+	// add conn to user
+	Sessions[sessionIdx].Users[userIdx].Conn = conn
+}
+
+func findSession(uuid string) int {
 	for idx, session := range Sessions {
 		for _, user := range session.Users {
 			if user.UUID == uuid {
@@ -110,7 +117,7 @@ func FindSession(uuid string) int {
 	return -1
 }
 
-func FindUser(sessionIdx int, uuid string) int {
+func findUser(sessionIdx int, uuid string) int {
 	for idx, user := range Sessions[sessionIdx].Users {
 		if user.UUID == uuid {
 			return idx

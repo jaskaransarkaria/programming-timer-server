@@ -37,12 +37,7 @@ func reader(conn *websocket.Conn) { // need to make each connection a go routine
 	for {
 			messageType, p, err := conn.ReadMessage()
 			log.Println(string(p))
-			// find session
-			sessionIdx := session.FindSession(string(p))
-			// find the user 
-			userIdx := session.FindUser(sessionIdx, string(p))
-			// add conn to user
-			session.Sessions[sessionIdx].Users[userIdx] = *conn
+			session.AddUserConnToSession(string(p), conn)
 			if err != nil {
 				log.Println(err)
 				// hear we are actually listening for close connections shown in err
@@ -54,8 +49,16 @@ func reader(conn *websocket.Conn) { // need to make each connection a go routine
 			jsonErr := conn.ReadJSON(&sessionToUpdate)
 			if jsonErr != nil {
 				log.Println(jsonErr)
+				return
 			}
-			sessionToUpdate.HandleTimerEnd()
+			updatedSession, updateErr := sessionToUpdate.HandleTimerEnd()
+			if updateErr != nil {
+				log.Println(updateErr)
+				return
+			}
+			for _, user := range updatedSession.Users {
+				user.Conn.WriteJSON(updatedSession)
+			}
 		}
 }
 
@@ -67,11 +70,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-
-
 	log.Println("Client successfully connected to Golang Websocket!")
-	// reader ran as a goroute from main? But it will be reading the message from the channel
-	// write as a go routine
 	reader(ws)
 }
 
@@ -127,3 +126,5 @@ func SetupRoutes() {
 
 // think about if I need to re-architect the way I read and write messages? 
 // Using goroutines and Channels?
+// reader ran as a goroute from main? But it will be reading the message from the channel
+// write as a go routine
