@@ -14,6 +14,34 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+var sessionUpdateChannel = make(chan *session.Session)
+// var wsInitChannel = make(chan *)
+
+func channelReader(conn *websocket.Conn) {
+	for {
+		// read each of the channels if possible
+		sessionUpdate := <-sessionUpdateChannel
+		// wsSessionInit := -wsInitChannel
+
+		if sessionUpdate != nil {
+			go handleUpdateSession(*sessionUpdate)
+		}
+	}
+}
+
+func handleUpdateSession(sessionToUpdate session.Session) {
+			updatedSession, updateErr := sessionToUpdate.HandleTimerEnd()
+			if updateErr != nil {
+				log.Println("updateError", updateErr)
+				return
+			}
+			for _, user := range updatedSession.Users {
+				user.Conn.WriteJSON(updatedSession)
+			}
+}
+
+
+
 func joinExistingSession(joinExistingSessionData session.ExistingSessionReq, newUser session.User) (session.Session, error) {
 		matchedSessionIdx, err := session.GetExistingSession(joinExistingSessionData.JoinSessionID)
 		if err != nil {
@@ -32,9 +60,14 @@ func writer(conn *websocket.Conn, messageType int, message []byte) {
 		}
 }
 
-func reader(conn *websocket.Conn) { // need to make each connection a go routine
+func reader(conn *websocket.Conn) {
+	// need to make each connection a go routine
 	// listen on this connection for new messages and send messages down that connection
 	for {
+
+		// going to get the messages from the channel not pass in via the conn any more
+		// this means I need to re think how I attach conns to users
+
 		messageType, p, err := conn.ReadMessage()
 		log.Println(string(p))
 		session.AddUserConnToSession(string(p), conn)
@@ -72,6 +105,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Client successfully connected to Golang Websocket!")
 	reader(ws)
+	go channelReader(ws)
 }
 
 func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -121,6 +155,7 @@ func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
+
 }
 
 
