@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
+	"github.com/jaskaransarkaria/programming-timer-server/readers"
 )
 
 var upgrader = websocket.Upgrader{
@@ -14,86 +15,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var sessionUpdateChannel = make(chan *session.Session)
-// var wsInitChannel = make(chan *)
-
-func channelReader(conn *websocket.Conn) {
-	for {
-		// read each of the channels if possible
-		sessionUpdate := <-sessionUpdateChannel
-		// wsSessionInit := -wsInitChannel
-
-		if sessionUpdate != nil {
-			go handleUpdateSession(*sessionUpdate)
-		}
-	}
-}
-
-func handleUpdateSession(sessionToUpdate session.Session) {
-			updatedSession, updateErr := sessionToUpdate.HandleTimerEnd()
-			if updateErr != nil {
-				log.Println("updateError", updateErr)
-				return
-			}
-			for _, user := range updatedSession.Users {
-				user.Conn.WriteJSON(updatedSession)
-			}
-}
-
-
-
-func joinExistingSession(joinExistingSessionData session.ExistingSessionReq, newUser session.User) (session.Session, error) {
-		matchedSessionIdx, err := session.GetExistingSession(joinExistingSessionData.JoinSessionID)
-		if err != nil {
-			return session.Sessions[matchedSessionIdx], err
-		}
-		session.Sessions[matchedSessionIdx].AddUser(newUser)
-		return session.Sessions[matchedSessionIdx], nil
-}
-
 func enableCors(w *http.ResponseWriter) {(*w).Header().Set("Access-Control-Allow-Origin", "*")}
-
-func writer(conn *websocket.Conn, messageType int, message []byte) {
-	// message the client
-	if err := conn.WriteMessage(messageType, message); err != nil {
-		log.Println(err)
-		}
-}
-
-func reader(conn *websocket.Conn) {
-	// need to make each connection a go routine
-	// listen on this connection for new messages and send messages down that connection
-	for {
-
-		// going to get the messages from the channel not pass in via the conn any more
-		// this means I need to re think how I attach conns to users
-
-		messageType, p, err := conn.ReadMessage()
-		log.Println(string(p))
-		session.AddUserConnToSession(string(p), conn)
-		if err != nil {
-			log.Println("Connection closing:", err)
-			// hear we are actually listening for close connections shown in err
-			conn.Close()
-		}
-			writer(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
-
-			var sessionToUpdate session.Session
-			jsonErr := conn.ReadJSON(&sessionToUpdate)
-			if jsonErr != nil {
-				log.Println("jsonError", jsonErr)
-				return
-			}
-			updatedSession, updateErr := sessionToUpdate.HandleTimerEnd()
-			if updateErr != nil {
-				log.Println("updateError", updateErr)
-				return
-			}
-			for _, user := range updatedSession.Users {
-				user.Conn.WriteJSON(updatedSession)
-			}
-		}
-}
 
 func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	// this is for CORS -  allow all origin
@@ -104,8 +26,8 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	log.Println("Client successfully connected to Golang Websocket!")
-	reader(ws)
-	go channelReader(ws)
+	readers.NewConnReader(ws)
+	go readers.UpdateReader(ws)
 }
 
 func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -139,12 +61,11 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var newUser = session.User{ UUID: session.GenerateRandomID("user") }
-	matchedSession, err := joinExistingSession(sessionRequest, newUser)
+	matchedSession, err := session.JoinExistingSession(sessionRequest, newUser)
 	if err != nil {
 		bufferedErr, _ := json.Marshal(err)
 		w.Write(bufferedErr)
 	}
-	
 	resp := session.InitSessionResponse{matchedSession, newUser}
 	bufferedExistingSession, _ := json.Marshal(resp)
 	w.Write(bufferedExistingSession)
@@ -155,11 +76,4 @@ func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
-
 }
-
-
-// think about if I need to re-architect the way I read and write messages? 
-// Using goroutines and Channels?
-// reader ran as a goroute from main? But it will be reading the message from the channel
-// write as a go routine
