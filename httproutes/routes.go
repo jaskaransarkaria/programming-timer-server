@@ -27,7 +27,22 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Client successfully connected to Golang Websocket!")
 	readers.NewConnReader(ws)
-	go readers.UpdateReader(ws)
+}
+
+func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {
+	// going to write to the channel
+	var sessionToUpdate session.Session
+	var requestBody = r.Body
+	enableCors(&w)
+	err := json.NewDecoder(requestBody).Decode(&sessionToUpdate)
+
+	if err != nil {
+		log.Println(err)
+	}
+	defer r.Body.Close()
+	log.Println(sessionToUpdate)
+
+	session.UpdateTimerChannel <- sessionToUpdate
 }
 
 func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
@@ -76,4 +91,6 @@ func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
+	http.HandleFunc("/session/update", updateSessionEndpoint)
+	go readers.UpdateChannelReader()
 }

@@ -18,19 +18,12 @@ func NewConnReader(conn *websocket.Conn) {
 			conn.Close()
 		}
 		writers.NewConnWriter(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
-		return
 	}
 }
 
-func UpdateReader(conn *websocket.Conn) {
+func UpdateChannelReader() {
 	for {
-			var sessionToUpdate session.Session
-			jsonErr := conn.ReadJSON(&sessionToUpdate)
-			if jsonErr != nil {
-				log.Println("jsonError", jsonErr)
-			} else {
-				session.HandleUpdateSession(sessionToUpdate)
-			}
+		recievedUpdate := <- session.UpdateTimerChannel
+		session.HandleUpdateSession(recievedUpdate)
 	}
 }
-

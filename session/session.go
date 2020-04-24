@@ -43,6 +43,9 @@ type ExistingSessionReq struct {
 
 var Sessions []Session
 
+var UpdateTimerChannel = make(chan Session)
+
+
 func GenerateRandomID(typeOfID string) string {
 	length, err := getIDLength(typeOfID)
 		if err != nil {
@@ -88,9 +91,56 @@ func HandleUpdateSession(sessionToUpdate Session) {
 		log.Println("updateError", updateErr)
 		return
 	}
-	for _, user := range updatedSession.Users {
-		user.Conn.WriteJSON(updatedSession)
+	for _, user := range Sessions[updatedSession].Users {
+		user.Conn.WriteJSON(Sessions[updatedSession])
 	}
+}
+
+func (session *Session) handleTimerEnd() (int, error) {
+	// update the session so that it has the most recent number of users
+	updatedSessionIdx, err := getExistingSession(session.SessionID)
+	if err != nil  {
+		return -1, err
+	}
+	changeDriver(updatedSessionIdx)
+	resetTimer(updatedSessionIdx)
+	return updatedSessionIdx, nil
+}
+
+func getExistingSession(desiredSessionID string) (int, error) {
+	for idx, session :=  range Sessions {
+		if session.SessionID == desiredSessionID {
+			return idx, nil
+		}
+	}
+	return -1, errors.New("There are no sessions with the id:" + desiredSessionID)
+}
+
+func changeDriver(sessionIndex int) {
+	if len(Sessions[sessionIndex].PreviousDrivers) == len(Sessions[sessionIndex].Users) {
+		Sessions[sessionIndex].PreviousDrivers = nil
+		selectNewDriver(sessionIndex)
+	}
+	Sessions[sessionIndex].PreviousDrivers = append(
+		Sessions[sessionIndex].PreviousDrivers,
+		Sessions[sessionIndex].CurrentDriver,
+	)
+	selectNewDriver(sessionIndex)
+}
+
+func selectNewDriver(sessionIndex int) {
+	for _, user := range Sessions[sessionIndex].Users {
+		if user != Sessions[sessionIndex].CurrentDriver {
+			Sessions[sessionIndex].CurrentDriver = user
+			break
+		}
+	}
+}
+
+func resetTimer(sessionIndex int) {
+	var nowMsec = time.Now().UnixNano() / int64(time.Millisecond)
+	Sessions[sessionIndex].StartTime = nowMsec
+	Sessions[sessionIndex].EndTime = nowMsec + Sessions[sessionIndex].Duration
 }
 
 func (session *Session) addUser(user User) {
@@ -105,42 +155,6 @@ func getIDLength(typeOfID string) (int8, error) {
 		return 4, nil // equals 8 characters long
 	}
 	return -1, errors.New("Invalid typeofID as parameter")
-}
-
-func (session *Session) selectNewDriver() Session {
-	// choose a uuid from the users that's not the currentDriver
-	for _, user := range session.Users {
-		if user != session.CurrentDriver {
-			session.CurrentDriver = user
-		} 
-	}
-	return *session
-}
-
-func (session *Session) changeDriver() Session {
-	if len(session.PreviousDrivers) == len(session.Users) {
-		session.PreviousDrivers = nil
-		return session.selectNewDriver()
-	}
-	session.PreviousDrivers = append(session.PreviousDrivers, session.CurrentDriver)
-  return session.selectNewDriver()
-}
-
-func (session *Session) resetTimer() {
-	var nowMsec = time.Now().UnixNano() / int64(time.Millisecond)
-	session.StartTime = nowMsec
-	session.EndTime = nowMsec + session.Duration
-}
-
-func (session *Session) handleTimerEnd() (Session, error) {
-	// update the session so that it has the most recent number of users
-	updatedSessionIdx, err := getExistingSession(session.SessionID)
-	if err != nil  {
-		return Session{}, err
-	}
-	Sessions[updatedSessionIdx].changeDriver()
-	Sessions[updatedSessionIdx].resetTimer()
-	return Sessions[updatedSessionIdx], nil
 }
 
 
@@ -162,14 +176,4 @@ func findUser(sessionIdx int, uuid string) int {
 		}
 	}
 	return -1
-}
-
-func getExistingSession(desiredSessionID string) (int, error) {
-	// iterate through sessions
-	for idx, session :=  range Sessions {
-		if session.SessionID == desiredSessionID {
-			return idx, nil
-		}
-	}
-	return -1, errors.New("There are no sessions with the id:" + desiredSessionID)
 }
