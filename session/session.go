@@ -94,15 +94,21 @@ func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser Use
 
 // HandleUpdateSession when a timer finishes
 func HandleUpdateSession(sessionToUpdate Session) {
-	updatedSession, updateErr := sessionToUpdate.handleTimerEnd()
+	updatedSessionidx, updateErr := sessionToUpdate.handleTimerEnd()
 	if updateErr != nil {
 		log.Println("updateError", updateErr)
 		return
 	}
-	for _, user := range Sessions[updatedSession].Users {
-		user.Conn.WriteJSON(Sessions[updatedSession])
+	Sessions[updatedSessionidx].broadcastToSessionUsers()
+}
+
+
+func (session *Session) broadcastToSessionUsers() {
+		for _, user := range session.Users {
+		user.Conn.WriteJSON(session)
 	}
 }
+
 
 func (session *Session) handleTimerEnd() (int, error) {
 	updatedSessionIdx, err := getExistingSession(session.SessionID)
