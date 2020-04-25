@@ -95,12 +95,12 @@ func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser Use
 
 // HandleUpdateSession when a timer finishes
 func HandleUpdateSession(sessionToUpdate Session) {
-	updatedSessionidx, updateErr := sessionToUpdate.handleTimerEnd()
+	updatedSessionIdx, updateErr := sessionToUpdate.handleTimerEnd()
 	if updateErr != nil {
 		log.Println("updateError", updateErr)
 		return
 	}
-	Sessions[updatedSessionidx].broadcastToSessionUsers()
+	Sessions[updatedSessionIdx].broadcastToSessionUsers()
 }
 
 
@@ -109,6 +109,7 @@ func (session *Session) broadcastToSessionUsers() {
 		user.Conn.WriteJSON(session)
 	}
 }
+
 
 
 func (session *Session) handleTimerEnd() (int, error) {
@@ -134,7 +135,6 @@ func (session *Session) changeDriver() {
 	if len(session.PreviousDrivers) == len(session.Users) {
 		session.PreviousDrivers = nil
 		session.selectNewDriver()
-
 	} else {
 		session.PreviousDrivers = append(
 			session.PreviousDrivers,
@@ -147,10 +147,21 @@ func (session *Session) changeDriver() {
 func (session *Session) selectNewDriver() {
 	for _, user := range session.Users {
 		if user.UUID != session.CurrentDriver.UUID {
-			session.CurrentDriver = user
-			break
+			beenDriver := session.hasUserBeenDriver(user.UUID)
+			if beenDriver == false {
+				session.CurrentDriver = user
+				log.Println("new driver selected")
+			}
 		}
 	}
+}
+	func (session *Session) hasUserBeenDriver(uuid string) bool {
+		for _, prevDriver := range session.PreviousDrivers {
+			if uuid == prevDriver.UUID {
+				return true
+			}
+	}
+	return false
 }
 
 func (session *Session) resetTimer() {
