@@ -1,9 +1,8 @@
 package session
 
 import (
+	"github.com/google/uuid"
 	"log"
-	"math/rand"
-	"encoding/hex"
 	"errors"
 	"github.com/gorilla/websocket"
 	"time"
@@ -55,10 +54,12 @@ func GenerateRandomID(typeOfID string) string {
 		if err != nil {
 			log.Println("err generating ID", err)
 		}
-	b := make([]byte, length)
-	rand.Read(b)
-	s := hex.EncodeToString(b)
-	return s
+	uuid := uuid.New().String()
+	
+	// b := make([]byte, length)
+	// rand.Read(b)
+	// s := hex.EncodeToString(b)
+	return uuid[:length]
 }
 
 // CreateNewUserAndSession creates new users and sessions
@@ -164,12 +165,12 @@ func (session *Session) addUser(user User) {
 
 func getIDLength(typeOfID string) (int8, error) {
 		if (typeOfID == "session") {
-		return 2, nil // equals 4 characters long
+		return 4, nil
 	}
 	if (typeOfID == "user") {
-		return 4, nil // equals 8 characters long
+		return 8, nil
 	}
-	return -1, errors.New("Invalid typeofID as parameter")
+	return -1, errors.New("Invalid typeofID")
 }
 
 
