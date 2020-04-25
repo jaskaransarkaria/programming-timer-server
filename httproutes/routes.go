@@ -77,7 +77,6 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Write(bufferedExistingSession)
 }
 
-
 func SetupRoutes() {
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)

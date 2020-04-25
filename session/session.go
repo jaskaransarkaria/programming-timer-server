@@ -26,26 +26,30 @@ type Session struct {
 	Users []User
 }
 
+// InitSessionResponse is ... 
 type InitSessionResponse struct {
 	Session Session
 	User User
 }
 
-// StartTimer ... JSON request from the client
+// StartTimerReq ... JSON request from the client
 type StartTimerReq struct {
 	Duration int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
 
+// ExistingSessionReq ...
 type ExistingSessionReq struct {
 	JoinSessionID string `json:"joinSession"`
 }
 
+// Sessions is a collection of all current sessions
 var Sessions []Session
 
+// UpdateTimerChannel is the channel which reads updates
 var UpdateTimerChannel = make(chan Session)
 
-
+// GenerateRandomID generates session & user ids
 func GenerateRandomID(typeOfID string) string {
 	length, err := getIDLength(typeOfID)
 		if err != nil {
@@ -57,6 +61,7 @@ func GenerateRandomID(typeOfID string) string {
 	return s
 }
 
+// CreateNewUserAndSession creates new users and sessions
 func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session {
 	var newSession = Session{
 		SessionID: GenerateRandomID("session"),
@@ -69,13 +74,15 @@ func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session
 	Sessions = append(Sessions, newSession)
 	return newSession
 }
+
+// AddUserConnToSession adds the ws connection to the relevant session
 func AddUserConnToSession(uuid string, conn *websocket.Conn) {
 	sessionIdx := findSession(uuid)
-	userIdx := findUser(sessionIdx, uuid)
-	// add conn to user
+	userIdx := Sessions[sessionIdx].findUser(uuid)
 	Sessions[sessionIdx].Users[userIdx].Conn = conn
 }
 
+// JoinExistingSession adds a user to an existing session
 func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser User) (Session, error) {
 	matchedSessionIdx, err := getExistingSession(joinExistingSessionData.JoinSessionID)
 	if err != nil {
@@ -85,28 +92,25 @@ func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser Use
 	return Sessions[matchedSessionIdx], nil
 }
 
+// HandleUpdateSession when a timer finishes
 func HandleUpdateSession(sessionToUpdate Session) {
-	log.Println("A session is being updated...")
 	updatedSession, updateErr := sessionToUpdate.handleTimerEnd()
 	if updateErr != nil {
 		log.Println("updateError", updateErr)
 		return
 	}
 	for _, user := range Sessions[updatedSession].Users {
-		// log.Println("the session has been updated and now the all the users will be sent the UPDATED SESSION")
-		// log.Printf("%+v\n", Sessions[updatedSession])
 		user.Conn.WriteJSON(Sessions[updatedSession])
 	}
 }
 
 func (session *Session) handleTimerEnd() (int, error) {
-	// update the session so that it has the most recent number of users
 	updatedSessionIdx, err := getExistingSession(session.SessionID)
 	if err != nil  {
 		return -1, err
 	}
-	changeDriver(updatedSessionIdx)
-	resetTimer(updatedSessionIdx)
+	Sessions[updatedSessionIdx].changeDriver()
+	Sessions[updatedSessionIdx].resetTimer()
 	return updatedSessionIdx, nil
 }
 
@@ -119,33 +123,33 @@ func getExistingSession(desiredSessionID string) (int, error) {
 	return -1, errors.New("There are no sessions with the id:" + desiredSessionID)
 }
 
-func changeDriver(sessionIndex int) {
-	if len(Sessions[sessionIndex].PreviousDrivers) == len(Sessions[sessionIndex].Users) {
-		Sessions[sessionIndex].PreviousDrivers = nil
-		selectNewDriver(sessionIndex)
+func (session *Session) changeDriver() {
+	if len(session.PreviousDrivers) == len(session.Users) {
+		session.PreviousDrivers = nil
+		session.selectNewDriver()
 
 	} else {
-		Sessions[sessionIndex].PreviousDrivers = append(
-			Sessions[sessionIndex].PreviousDrivers,
-			Sessions[sessionIndex].CurrentDriver,
+		session.PreviousDrivers = append(
+			session.PreviousDrivers,
+			session.CurrentDriver,
 		)
-		selectNewDriver(sessionIndex)
+		session.selectNewDriver()
 	}
 }
 
-func selectNewDriver(sessionIndex int) {
-	for _, user := range Sessions[sessionIndex].Users {
-		if user.UUID != Sessions[sessionIndex].CurrentDriver.UUID {
-			Sessions[sessionIndex].CurrentDriver = user
+func (session *Session) selectNewDriver() {
+	for _, user := range session.Users {
+		if user.UUID != session.CurrentDriver.UUID {
+			session.CurrentDriver = user
 			break
 		}
 	}
 }
 
-func resetTimer(sessionIndex int) {
+func (session *Session) resetTimer() {
 	var nowMsec = time.Now().UnixNano() / int64(time.Millisecond)
-	Sessions[sessionIndex].StartTime = nowMsec
-	Sessions[sessionIndex].EndTime = nowMsec + Sessions[sessionIndex].Duration
+	session.StartTime = nowMsec
+	session.EndTime = nowMsec + session.Duration
 }
 
 func (session *Session) addUser(user User) {
@@ -174,8 +178,8 @@ func findSession(uuid string) int {
 	return -1
 }
 
-func findUser(sessionIdx int, uuid string) int {
-	for idx, user := range Sessions[sessionIdx].Users {
+func (session *Session) findUser(uuid string) int {
+	for idx, user := range session.Users {
 		if user.UUID == uuid {
 			return idx
 		}
