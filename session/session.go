@@ -151,16 +151,19 @@ func (session *Session) selectNewDriver() {
 			if beenDriver == false {
 				session.CurrentDriver = user
 				log.Println("new driver selected")
+				break
 			}
 		}
 	}
 }
 	func (session *Session) hasUserBeenDriver(uuid string) bool {
-		for _, prevDriver := range session.PreviousDrivers {
-			if uuid == prevDriver.UUID {
-				return true
+		if len(session.PreviousDrivers) > 0 {
+			for _, prevDriver := range session.PreviousDrivers {
+				if uuid == prevDriver.UUID {
+					return true
+				}
 			}
-	}
+		}
 	return false
 }
 
