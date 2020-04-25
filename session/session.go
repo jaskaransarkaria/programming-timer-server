@@ -86,12 +86,15 @@ func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser Use
 }
 
 func HandleUpdateSession(sessionToUpdate Session) {
+	log.Println("A session is being updated...")
 	updatedSession, updateErr := sessionToUpdate.handleTimerEnd()
 	if updateErr != nil {
 		log.Println("updateError", updateErr)
 		return
 	}
 	for _, user := range Sessions[updatedSession].Users {
+		// log.Println("the session has been updated and now the all the users will be sent the UPDATED SESSION")
+		// log.Printf("%+v\n", Sessions[updatedSession])
 		user.Conn.WriteJSON(Sessions[updatedSession])
 	}
 }
@@ -120,17 +123,19 @@ func changeDriver(sessionIndex int) {
 	if len(Sessions[sessionIndex].PreviousDrivers) == len(Sessions[sessionIndex].Users) {
 		Sessions[sessionIndex].PreviousDrivers = nil
 		selectNewDriver(sessionIndex)
+
+	} else {
+		Sessions[sessionIndex].PreviousDrivers = append(
+			Sessions[sessionIndex].PreviousDrivers,
+			Sessions[sessionIndex].CurrentDriver,
+		)
+		selectNewDriver(sessionIndex)
 	}
-	Sessions[sessionIndex].PreviousDrivers = append(
-		Sessions[sessionIndex].PreviousDrivers,
-		Sessions[sessionIndex].CurrentDriver,
-	)
-	selectNewDriver(sessionIndex)
 }
 
 func selectNewDriver(sessionIndex int) {
 	for _, user := range Sessions[sessionIndex].Users {
-		if user != Sessions[sessionIndex].CurrentDriver {
+		if user.UUID != Sessions[sessionIndex].CurrentDriver.UUID {
 			Sessions[sessionIndex].CurrentDriver = user
 			break
 		}

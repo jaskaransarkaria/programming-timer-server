@@ -30,18 +30,14 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {
-	// going to write to the channel
 	var sessionToUpdate session.Session
 	var requestBody = r.Body
 	enableCors(&w)
 	err := json.NewDecoder(requestBody).Decode(&sessionToUpdate)
-
 	if err != nil {
 		log.Println(err)
 	}
 	defer r.Body.Close()
-	log.Println(sessionToUpdate)
-
 	session.UpdateTimerChannel <- sessionToUpdate
 }
 
@@ -49,14 +45,11 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	var timerRequest session.StartTimerReq
 	var requestBody = r.Body
 	enableCors(&w)
-	
 	err := json.NewDecoder(requestBody).Decode(&timerRequest)
-
 	if err != nil {
 		log.Println(err)
 	}
 	defer r.Body.Close()
-	
 	newUser := session.User{ UUID: session.GenerateRandomID("user") }
 	newSession := session.CreateNewUserAndSession(timerRequest, newUser)
 	resp := session.InitSessionResponse{newSession, newUser}
@@ -68,13 +61,11 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	var sessionRequest session.ExistingSessionReq
 	var requestBody = r.Body
 	enableCors(&w)
-	
 	err := json.NewDecoder(requestBody).Decode(&sessionRequest)
 	if err != nil {
 		log.Println(err)
 	}
 	defer r.Body.Close()
-
 	var newUser = session.User{ UUID: session.GenerateRandomID("user") }
 	matchedSession, err := session.JoinExistingSession(sessionRequest, newUser)
 	if err != nil {
