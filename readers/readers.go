@@ -4,20 +4,22 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
-	"github.com/jaskaransarkaria/programming-timer-server/writers"
+	// "github.com/jaskaransarkaria/programming-timer-server/writers"
 )
 
 func NewConnReader(conn *websocket.Conn) {
 	for {
-		messageType, p, err := conn.ReadMessage()
-		log.Println(string(p))
-		session.AddUserConnToSession(string(p), conn)
+		_, p, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Connection closing:", err)
-			// hear we are actually listening for close connections shown in err
+			session.RemoveUser(conn)
 			conn.Close()
+			break
+			} else {
+			log.Println(string(p))
+			session.AddUserConnToSession(string(p), conn)
 		}
-		writers.NewConnWriter(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
+		// writers.NewConnWriter(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 	}
 }
 

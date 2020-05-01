@@ -55,10 +55,6 @@ func GenerateRandomID(typeOfID string) string {
 			log.Println("err generating ID", err)
 		}
 	uuid := uuid.New().String()
-	
-	// b := make([]byte, length)
-	// rand.Read(b)
-	// s := hex.EncodeToString(b)
 	return uuid[:length]
 }
 
@@ -78,8 +74,16 @@ func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session
 
 // AddUserConnToSession adds the ws connection to the relevant session
 func AddUserConnToSession(uuid string, conn *websocket.Conn) {
-	sessionIdx := findSession(uuid)
-	userIdx := Sessions[sessionIdx].findUser(uuid)
+	sessionIdx, sessionErr := findSession(uuid)
+		if sessionErr != nil {
+		log.Println(sessionErr)
+		return
+	}
+	userIdx, userErr := Sessions[sessionIdx].findUser(uuid)
+		if userErr != nil {
+		log.Println(userErr)
+		return
+	}
 	Sessions[sessionIdx].Users[userIdx].Conn = conn
 }
 
@@ -103,14 +107,12 @@ func HandleUpdateSession(sessionToUpdate Session) {
 	Sessions[updatedSessionIdx].broadcastToSessionUsers()
 }
 
-
 func (session *Session) broadcastToSessionUsers() {
 		for _, user := range session.Users {
-		user.Conn.WriteJSON(session)
+			log.Println("sending to:", user.UUID)
+			user.Conn.WriteJSON(session)
 	}
 }
-
-
 
 func (session *Session) handleTimerEnd() (int, error) {
 	updatedSessionIdx, err := getExistingSession(session.SessionID)
@@ -134,14 +136,10 @@ func getExistingSession(desiredSessionID string) (int, error) {
 func (session *Session) changeDriver() {
 	if len(session.PreviousDrivers) == len(session.Users) {
 		session.PreviousDrivers = nil
-		session.selectNewDriver()
-	} else {
-		session.PreviousDrivers = append(
-			session.PreviousDrivers,
-			session.CurrentDriver,
-		)
-		session.selectNewDriver()
+		log.Println("PreviousDrivers cleared")
+		log.Println(session.PreviousDrivers)
 	}
+	session.selectNewDriver()
 }
 
 func (session *Session) selectNewDriver() {
@@ -150,11 +148,18 @@ func (session *Session) selectNewDriver() {
 			beenDriver := session.hasUserBeenDriver(user.UUID)
 			if beenDriver == false {
 				session.CurrentDriver = user
+				session.PreviousDrivers = append(
+					session.PreviousDrivers,
+					session.CurrentDriver,
+				)
 				log.Println("new driver selected")
 				break
 			}
 		}
+		log.Println("user equals current driver")
 	}
+	log.Println("after the for loop")
+	log.Printf("%+v\n", Sessions)
 }
 	func (session *Session) hasUserBeenDriver(uuid string) bool {
 		if len(session.PreviousDrivers) > 0 {
@@ -187,23 +192,67 @@ func getIDLength(typeOfID string) (int8, error) {
 	return -1, errors.New("Invalid typeofID")
 }
 
-
-func findSession(uuid string) int {
-	for idx, session := range Sessions {
-		for _, user := range session.Users {
-			if user.UUID == uuid {
-				return idx
+func findSession(keyToFind interface{}) (int, error) {
+	switch keyToFind.(type) {
+	case string:
+		for idx, session := range Sessions {
+			for _, user := range session.Users {
+				if user.UUID == keyToFind {
+					return idx, nil
+				}
+			}
+		}
+	case *websocket.Conn:
+		for idx, session := range Sessions {
+			for _, user := range session.Users {
+				if user.Conn == keyToFind {
+					return idx, nil
+				}
 			}
 		}
 	}
-	return -1
+	return -1, errors.New("Cannot find Session")
 }
 
-func (session *Session) findUser(uuid string) int {
-	for idx, user := range session.Users {
-		if user.UUID == uuid {
-			return idx
+func (session *Session) findUser(keyToFind interface{}) (int, error) {
+	switch keyToFind.(type) {
+	case string:
+		for idx, user := range session.Users {
+			if user.UUID == keyToFind {
+				return idx, nil
+			}
+		}
+	case *websocket.Conn:
+		for idx, user := range session.Users {
+			if user.Conn == keyToFind {
+				return idx, nil
+			}
 		}
 	}
-	return -1
+	return -1, errors.New("Cannot find user")
+}
+
+
+func RemoveUser(conn *websocket.Conn) {
+	// delete this user from their session
+	
+	sessionIdx, sessionErr := findSession(conn)
+	if sessionErr != nil {
+		log.Println(sessionErr)
+		return
+	}
+	userIdx, userErr := Sessions[sessionIdx].findUser(conn)
+		if userErr != nil {
+			log.Println(userErr)
+			return
+		}
+	log.Println("pre-deleted", Sessions[sessionIdx].Users)
+	// // Remove the element at index i from a.
+	// // Copy last element to index i.
+	Sessions[sessionIdx].Users[userIdx] = Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1]
+	//  // Erase last element (write zero value).
+	Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1] = User{}
+	// // Truncate slice.
+	Sessions[sessionIdx].Users = Sessions[sessionIdx].Users[:len(Sessions[sessionIdx].Users)-1]
+	log.Println("deleted?", Sessions[sessionIdx].Users)
 }
