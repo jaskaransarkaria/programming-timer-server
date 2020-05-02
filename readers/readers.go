@@ -19,7 +19,6 @@ func NewConnReader(conn *websocket.Conn) {
 			log.Println(string(p))
 			session.AddUserConnToSession(string(p), conn)
 		}
-		// writers.NewConnWriter(conn, messageType, []byte("well done you've connected via web sockets to a go server"))
 	}
 }
 

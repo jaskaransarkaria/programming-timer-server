@@ -235,7 +235,6 @@ func (session *Session) findUser(keyToFind interface{}) (int, error) {
 
 func RemoveUser(conn *websocket.Conn) {
 	// delete this user from their session
-	
 	sessionIdx, sessionErr := findSession(conn)
 	if sessionErr != nil {
 		log.Println(sessionErr)
@@ -247,12 +246,24 @@ func RemoveUser(conn *websocket.Conn) {
 			return
 		}
 	log.Println("pre-deleted", Sessions[sessionIdx].Users)
-	// // Remove the element at index i from a.
-	// // Copy last element to index i.
+	// Copy last element to index userIdx
 	Sessions[sessionIdx].Users[userIdx] = Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1]
-	//  // Erase last element (write zero value).
+	// Erase last element (write zero value).
 	Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1] = User{}
-	// // Truncate slice.
+	// Truncate slice.
 	Sessions[sessionIdx].Users = Sessions[sessionIdx].Users[:len(Sessions[sessionIdx].Users)-1]
+	Sessions[sessionIdx].validateCurrentDriver()
 	log.Println("deleted?", Sessions[sessionIdx].Users)
+}
+
+func (session *Session) validateCurrentDriver() {
+	// if there is on one connected User make them the current driver
+	if len(session.Users) == 1 {
+		session.resetCurrentDriver(session.Users[0])
+	}
+}
+
+func (session *Session) resetCurrentDriver(singleUser User) {
+	session.CurrentDriver = singleUser
+	session.broadcastToSessionUsers()
 }
