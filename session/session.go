@@ -1,20 +1,20 @@
 package session
 
 import (
-	"github.com/google/uuid"
 	"log"
 	"errors"
 	"github.com/gorilla/websocket"
 	"time"
+	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
 
-// User is ...
+// User is ... each connected user
 type User struct {
 	UUID string
 	Conn *websocket.Conn
 }
 
-// Session is ...
+// Session is ... each active session
 type Session struct {
 	SessionID string
 	CurrentDriver User
@@ -25,7 +25,7 @@ type Session struct {
 	Users []User
 }
 
-// InitSessionResponse is ... 
+// InitSessionResponse is ... on inital connection
 type InitSessionResponse struct {
 	Session Session
 	User User
@@ -37,7 +37,7 @@ type StartTimerReq struct {
 	StartTime int64 `json:"startTime"`
 }
 
-// ExistingSessionReq ...
+// ExistingSessionReq ... join an existing session http request
 type ExistingSessionReq struct {
 	JoinSessionID string `json:"joinSession"`
 }
@@ -48,20 +48,10 @@ var Sessions []Session
 // UpdateTimerChannel is the channel which reads updates
 var UpdateTimerChannel = make(chan Session)
 
-// GenerateRandomID generates session & user ids
-func GenerateRandomID(typeOfID string) string {
-	length, err := getIDLength(typeOfID)
-		if err != nil {
-			log.Println("err generating ID", err)
-		}
-	uuid := uuid.New().String()
-	return uuid[:length]
-}
-
 // CreateNewUserAndSession creates new users and sessions
 func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session {
 	var newSession = Session{
-		SessionID: GenerateRandomID("session"),
+		SessionID: utils.GenerateRandomID("session"),
 		CurrentDriver: newUser,
 		Duration: newSessionData.Duration,
 		StartTime: newSessionData.StartTime,
@@ -107,9 +97,18 @@ func HandleUpdateSession(sessionToUpdate Session) {
 	Sessions[updatedSessionIdx].broadcastToSessionUsers()
 }
 
+// HandleRemoveUser ... of a disconneted user from the relevent session
+func HandleRemoveUser(conn *websocket.Conn) (error) {
+	sessionIdx, userIdx, findConnErr := findUserByConn(conn)
+	if findConnErr != nil {
+		return findConnErr
+	}
+	Sessions[sessionIdx].removeUser(userIdx)
+	return nil
+}
+
 func (session *Session) broadcastToSessionUsers() {
 		for _, user := range session.Users {
-			log.Println("sending to:", user.UUID)
 			user.Conn.WriteJSON(session)
 	}
 }
@@ -178,15 +177,7 @@ func (session *Session) addUser(user User) {
 		session.Users = append(session.Users, user)
 	}
 
-func getIDLength(typeOfID string) (int8, error) {
-		if (typeOfID == "session") {
-		return 4, nil
-	}
-	if (typeOfID == "user") {
-		return 8, nil
-	}
-	return -1, errors.New("Invalid typeofID")
-}
+
 
 func findSession(keyToFind interface{}) (int, error) {
 	switch keyToFind.(type) {
@@ -228,28 +219,6 @@ func (session *Session) findUser(keyToFind interface{}) (int, error) {
 	return -1, errors.New("Cannot find user")
 }
 
-
-func HandleRemoveUser(conn *websocket.Conn) (error) {
-	sessionIdx, userIdx, findConnErr := findUserByConn(conn)
-	if findConnErr != nil {
-		return findConnErr
-	}
-	Sessions[sessionIdx].removeUser(userIdx)
-	return nil
-}
-
-func findUserByConn(conn *websocket.Conn) (int, int, error) {
-	sessionIdx, sessionErr := findSession(conn)
-	if sessionErr != nil {
-		return -1, -1, sessionErr
-	}
-	userIdx, userErr := Sessions[sessionIdx].findUser(conn)
-	if userErr != nil {
-		return -1, -1, userErr
-	}
-	return sessionIdx, userIdx, nil
-}
-
 func (session *Session) removeUser(userIdx int) {
 	session.resetCurrentDriver(session.Users[userIdx])
 	// Copy last element to index userIdx
@@ -265,4 +234,16 @@ func (session *Session) resetCurrentDriver(userToBeRemoved User) {
 		session.changeDriver()
 		session.broadcastToSessionUsers()
 	}
+}
+
+func findUserByConn(conn *websocket.Conn) (int, int, error) {
+	sessionIdx, sessionErr := findSession(conn)
+	if sessionErr != nil {
+		return -1, -1, sessionErr
+	}
+	userIdx, userErr := Sessions[sessionIdx].findUser(conn)
+	if userErr != nil {
+		return -1, -1, userErr
+	}
+	return sessionIdx, userIdx, nil
 }

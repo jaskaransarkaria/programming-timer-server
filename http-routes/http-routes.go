@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
 	"github.com/jaskaransarkaria/programming-timer-server/readers"
+	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -50,7 +51,7 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	defer r.Body.Close()
-	newUser := session.User{ UUID: session.GenerateRandomID("user") }
+	newUser := session.User{ UUID: utils.GenerateRandomID("user") }
 	newSession := session.CreateNewUserAndSession(timerRequest, newUser)
 	resp := session.InitSessionResponse{newSession, newUser}
 	newSessionRes, _ := json.Marshal(resp)
@@ -66,7 +67,7 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	defer r.Body.Close()
-	var newUser = session.User{ UUID: session.GenerateRandomID("user") }
+	var newUser = session.User{ UUID: utils.GenerateRandomID("user") }
 	matchedSession, err := session.JoinExistingSession(sessionRequest, newUser)
 	if err != nil {
 		bufferedErr, _ := json.Marshal(err)

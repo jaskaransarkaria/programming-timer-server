@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/jaskaransarkaria/programming-timer-server/httproutes"
+	"github.com/jaskaransarkaria/programming-timer-server/http-routes"
 	"fmt"
 	"net/http"
 	"log"

@@ -4,7 +4,6 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
-	// "github.com/jaskaransarkaria/programming-timer-server/writers"
 )
 
 func NewConnReader(conn *websocket.Conn) {
