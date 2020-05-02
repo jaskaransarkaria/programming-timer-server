@@ -12,7 +12,7 @@ func NewConnReader(conn *websocket.Conn) {
 		_, p, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Connection closing:", err)
-			session.RemoveUser(conn)
+			session.HandleRemoveUser(conn)
 			conn.Close()
 			break
 			} else {

@@ -134,10 +134,8 @@ func getExistingSession(desiredSessionID string) (int, error) {
 }
 
 func (session *Session) changeDriver() {
-	if len(session.PreviousDrivers) == len(session.Users) {
+	if len(session.PreviousDrivers) >= len(session.Users) {
 		session.PreviousDrivers = nil
-		log.Println("PreviousDrivers cleared")
-		log.Println(session.PreviousDrivers)
 	}
 	session.selectNewDriver()
 }
@@ -156,9 +154,7 @@ func (session *Session) selectNewDriver() {
 				break
 			}
 		}
-		log.Println("user equals current driver")
 	}
-	log.Println("after the for loop")
 	log.Printf("%+v\n", Sessions)
 }
 	func (session *Session) hasUserBeenDriver(uuid string) bool {
@@ -233,37 +229,40 @@ func (session *Session) findUser(keyToFind interface{}) (int, error) {
 }
 
 
-func RemoveUser(conn *websocket.Conn) {
-	// delete this user from their session
+func HandleRemoveUser(conn *websocket.Conn) (error) {
+	sessionIdx, userIdx, findConnErr := findUserByConn(conn)
+	if findConnErr != nil {
+		return findConnErr
+	}
+	Sessions[sessionIdx].removeUser(userIdx)
+	return nil
+}
+
+func findUserByConn(conn *websocket.Conn) (int, int, error) {
 	sessionIdx, sessionErr := findSession(conn)
 	if sessionErr != nil {
-		log.Println(sessionErr)
-		return
+		return -1, -1, sessionErr
 	}
 	userIdx, userErr := Sessions[sessionIdx].findUser(conn)
-		if userErr != nil {
-			log.Println(userErr)
-			return
-		}
-	log.Println("pre-deleted", Sessions[sessionIdx].Users)
-	// Copy last element to index userIdx
-	Sessions[sessionIdx].Users[userIdx] = Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1]
-	// Erase last element (write zero value).
-	Sessions[sessionIdx].Users[len(Sessions[sessionIdx].Users)-1] = User{}
-	// Truncate slice.
-	Sessions[sessionIdx].Users = Sessions[sessionIdx].Users[:len(Sessions[sessionIdx].Users)-1]
-	Sessions[sessionIdx].validateCurrentDriver()
-	log.Println("deleted?", Sessions[sessionIdx].Users)
-}
-
-func (session *Session) validateCurrentDriver() {
-	// if there is on one connected User make them the current driver
-	if len(session.Users) == 1 {
-		session.resetCurrentDriver(session.Users[0])
+	if userErr != nil {
+		return -1, -1, userErr
 	}
+	return sessionIdx, userIdx, nil
 }
 
-func (session *Session) resetCurrentDriver(singleUser User) {
-	session.CurrentDriver = singleUser
-	session.broadcastToSessionUsers()
+func (session *Session) removeUser(userIdx int) {
+	session.resetCurrentDriver(session.Users[userIdx])
+	// Copy last element to index userIdx
+	session.Users[userIdx] = session.Users[len(session.Users)-1]
+	// Erase last element (write zero value).
+	session.Users[len(session.Users)-1] = User{}
+	// Truncate slice.
+	session.Users = session.Users[:len(session.Users)-1]
+}
+
+func (session *Session) resetCurrentDriver(userToBeRemoved User) {
+	if userToBeRemoved == session.CurrentDriver {
+		session.changeDriver()
+		session.broadcastToSessionUsers()
+	}
 }
