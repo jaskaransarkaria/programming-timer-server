@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: timer-server
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: pairprogrammingtimer.com
+    http:
+      paths:
+        - path: /
+          backend:
+            servicePort: 8080
+            serviceName: timer-server-service
