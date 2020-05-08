@@ -15,8 +15,8 @@ Keep time and turn order when you are pair programming, you can find the client 
 ## Stack
 
   * `Go` - An open source programming language that makes it easy to build simple, reliable, and efficient software.
-  * `Kubernetes` - an open-source system for automating deployment, scaling, and management of containerized applications.
-  * `scripts/` - build and deploy bash scripts.
+  * `Kubernetes` - An open-source system for automating deployment, scaling, and management of containerized applications.
+  * `scripts/` - Build and deploy with bash scripts.
 
 ## Getting Started
 
