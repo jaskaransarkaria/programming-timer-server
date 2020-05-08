@@ -18,3 +18,9 @@ spec:
         image: jaskaransarkaria/timer-server:1
         ports:
         - containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 8
+          periodSeconds: 3

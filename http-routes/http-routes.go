@@ -79,6 +79,10 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func SetupRoutes() {
+	http.HandleFunc("/healthz", func (w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		w.Write([]byte("ok"))
+	})
 	http.HandleFunc("/ws", wsEndpoint)
 	http.HandleFunc("/session/new", newSessionEndpoint)
 	http.HandleFunc("/session/join", joinSessionEndpoint)
