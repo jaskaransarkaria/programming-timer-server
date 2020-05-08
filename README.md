@@ -44,7 +44,7 @@ To deploy your changes run (see "Useful Commands"):
 
   `./scripts/deploy.sh $VERSION_NUMBER`
 
-[ NOTE ] - If you change the VERSION_NUMBER of the docker image you must manually change the associated tag in `.kubernetes/deployment.yaml`. Use `scripts/deploy_kubernetes_config.sh` for updating just  k8 config.
+> **NOTE** - If you change the VERSION_NUMBER of the docker image you must manually change the associated tag in `.kubernetes/deployment.yaml`. Use `scripts/deploy_kubernetes_config.sh` for updating just  k8 config.
 
 ### Todos
 
