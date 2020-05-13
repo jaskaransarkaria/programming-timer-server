@@ -45,7 +45,7 @@ type ExistingSessionReq struct {
 // Sessions is a collection of all current sessions
 var Sessions []Session
 
-// UpdateTimerChannel is the channel which reads updates
+// UpdateTimerChannel reads updates as they come in via websockets
 var UpdateTimerChannel = make(chan Session)
 
 // CreateNewUserAndSession creates new users and sessions

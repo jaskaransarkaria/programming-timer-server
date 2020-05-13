@@ -26,7 +26,7 @@ Set up credentials to a kubernetes cluster.
 
 To run the server locally
 
-  *`go run main.go --addr localhost:8080`
+  * `go run main.go --addr localhost:8080`
 
 ## Useful Commands
 
@@ -49,6 +49,7 @@ To deploy your changes run (see "Useful Commands"):
 ### Todos
 
 - [ ] Add tests
+- [ ] Remove `func enableCors`
 - [ ] Add travis CI/ CD  & git branch rules/protection
 - [ ] Add in notifications and prompts to restart the timer
 - [ ] Add environment config
