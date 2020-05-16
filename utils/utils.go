@@ -6,6 +6,9 @@ import (
 	"errors"
 )
 
+// RandomGenerator ... IDs for Sessions & Users
+type RandomGenerator func(typeOfID string) string
+
 // GenerateRandomID generates session & user ids
 func GenerateRandomID(typeOfID string) string {
 	length, err := getIDLength(typeOfID)

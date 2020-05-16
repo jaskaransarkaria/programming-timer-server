@@ -49,9 +49,13 @@ var Sessions []Session
 var UpdateTimerChannel = make(chan Session)
 
 // CreateNewUserAndSession creates new users and sessions
-func CreateNewUserAndSession(newSessionData StartTimerReq, newUser User) Session {
+func CreateNewUserAndSession(
+	newSessionData StartTimerReq,
+	newUser User,
+	generateIDFunc utils.RandomGenerator,
+	) Session {
 	var newSession = Session{
-		SessionID: utils.GenerateRandomID("session"),
+		SessionID: generateIDFunc("session"),
 		CurrentDriver: newUser,
 		Duration: newSessionData.Duration,
 		StartTime: newSessionData.StartTime,

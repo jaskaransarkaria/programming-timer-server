@@ -52,7 +52,11 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	newUser := session.User{ UUID: utils.GenerateRandomID("user") }
-	newSession := session.CreateNewUserAndSession(timerRequest, newUser)
+	newSession := session.CreateNewUserAndSession(
+		timerRequest,
+		newUser, 
+		utils.GenerateRandomID,
+	)
 	resp := session.InitSessionResponse{newSession, newUser}
 	newSessionRes, _ := json.Marshal(resp)
 	w.Write(newSessionRes)
