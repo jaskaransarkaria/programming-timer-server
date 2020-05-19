@@ -67,18 +67,17 @@ func CreateNewUserAndSession(
 }
 
 // AddUserConnToSession adds the ws connection to the relevant session
-func AddUserConnToSession(uuid string, conn *websocket.Conn) {
+func AddUserConnToSession(uuid string, conn *websocket.Conn) error {
 	sessionIdx, sessionErr := findSession(uuid)
 		if sessionErr != nil {
-		log.Println(sessionErr)
-		return
+		return sessionErr
 	}
 	userIdx, userErr := Sessions[sessionIdx].findUser(uuid)
 		if userErr != nil {
-		log.Println(userErr)
-		return
+		return userErr
 	}
 	Sessions[sessionIdx].Users[userIdx].Conn = conn
+	return nil
 }
 
 // JoinExistingSession adds a user to an existing session

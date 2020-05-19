@@ -6,7 +6,8 @@ import (
 	"github.com/jaskaransarkaria/programming-timer-server/session"
 )
 
-func NewConnReader(conn *websocket.Conn) {
+// ConnReader ... add/ remove client connections
+func ConnReader(conn *websocket.Conn) {
 	for {
 		_, p, err := conn.ReadMessage()
 		if err != nil {
@@ -19,11 +20,15 @@ func NewConnReader(conn *websocket.Conn) {
 			break
 			} else {
 			log.Println(string(p))
-			session.AddUserConnToSession(string(p), conn)
+			addToSessionErr := session.AddUserConnToSession(string(p), conn)
+			if addToSessionErr != nil {
+				log.Println(addToSessionErr)
+			}
 		}
 	}
 }
 
+// UpdateChannelReader handle updates to sessions
 func UpdateChannelReader() {
 	for {
 		recievedUpdate := <- session.UpdateTimerChannel

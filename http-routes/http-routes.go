@@ -27,7 +27,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	log.Println("Client successfully connected to Golang Websocket!")
-	go readers.NewConnReader(ws)
+	go readers.ConnReader(ws)
 }
 
 func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {

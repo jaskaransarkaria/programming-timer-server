@@ -3,10 +3,35 @@ package session
 import (
 	"testing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/gorilla/websocket"
 )
 
+type mockConnection struct {
+}
+
+func (u *mockConnection) Upgrade() (*websocket.Conn, error) {
+	return &websocket.Conn{}, nil
+}
+
 func mockGenerateRandomID(expectedID string) string {
-	return expectedID
+	return "mocked-id"
+}
+
+
+
+func setup() {
+	var newSessionData = StartTimerReq{
+		Duration: 60000,
+		StartTime: 1000,
+	}
+	var newUser = User{
+		UUID: "test-uuid",
+	}
+	CreateNewUserAndSession(
+		newSessionData,
+		newUser,
+		mockGenerateRandomID,
+	)
 }
 
 func TestCreateNewUserAndSession(t *testing.T) {
@@ -19,13 +44,14 @@ func TestCreateNewUserAndSession(t *testing.T) {
 	}
 
 	var expected = Session{
-		SessionID: "session",
+		SessionID: "mocked-id",
 		CurrentDriver: newUser,
 		Duration: newSessionData.Duration,
 		StartTime: newSessionData.StartTime,
 		EndTime: newSessionData.Duration + newSessionData.StartTime,
 		Users: []User{newUser},
 	}
+
 	actual := CreateNewUserAndSession(
 		newSessionData,
 		newUser,
@@ -33,10 +59,32 @@ func TestCreateNewUserAndSession(t *testing.T) {
 	)
 	
 	if !cmp.Equal(expected, actual) {
-		t.Errorf("Expected: %+v but recieved: %+v", expected, actual) // need to mock out the call to utils.GenerateRandomID()
+		t.Errorf("Expected: %+v but recieved: %+v", expected, actual)
+	}
+	
+	if len(Sessions) != 1 {
+		t.Errorf("Expected: %+v but recieved: %+v", Sessions, actual)
+	}
+	
+	if !cmp.Equal(Sessions[0], actual) {
+		t.Errorf("Expected: %+v but recieved: %+v", Sessions[0], actual)
 	}
 }
-func TestAddUserConnToSession(t *testing.T) {}
+
+func TestAddUserConnToSession(t *testing.T) {
+	setup()
+	var connToAdd = mockConnection{}
+	mockUpgradeConn, nil := connToAdd.Upgrade()
+	actual := AddUserConnToSession("test-uuid", mockUpgradeConn)
+	if actual != nil {
+		t.Errorf("Expected: nil but recieved: %+v", actual)
+	}
+	var actualConn = Sessions[0].Users[0].Conn
+	if mockUpgradeConn != actualConn {
+		t.Errorf("Expected: %+v but recieved: %+v", mockUpgradeConn, actualConn)
+	}
+}
+
 func TestJoinExistingSession(t *testing.T) {}
 func TestHandleUpdateSession(t *testing.T) {}
 func TestHandleRemoveSession(t *testing.T) {}
