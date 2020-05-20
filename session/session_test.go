@@ -20,12 +20,16 @@ func mockGenerateRandomID(expectedID string) string {
 
 
 func setup() (User, StartTimerReq) {
+	var connToAdd = mockConnection{}
+	mockUpgradeConn, _ := connToAdd.Upgrade()
+
 	var newSessionData = StartTimerReq{
 		Duration: 60000,
 		StartTime: 1000,
 	}
 	var newUser = User{
 		UUID: "test-uuid",
+		Conn: mockUpgradeConn,
 	}
 	CreateNewUserAndSession(
 		newSessionData,
