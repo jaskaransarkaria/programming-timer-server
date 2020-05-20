@@ -157,7 +157,6 @@ func (session *Session) selectNewDriver() {
 			}
 		}
 	}
-	log.Printf("%+v\n", Sessions)
 }
 	func (session *Session) hasUserBeenDriver(uuid string) bool {
 		if len(session.PreviousDrivers) > 0 {

@@ -19,7 +19,7 @@ func mockGenerateRandomID(expectedID string) string {
 
 
 
-func setup() {
+func setup() (User, StartTimerReq) {
 	var newSessionData = StartTimerReq{
 		Duration: 60000,
 		StartTime: 1000,
@@ -32,6 +32,8 @@ func setup() {
 		newUser,
 		mockGenerateRandomID,
 	)
+
+	return newUser, newSessionData
 }
 
 func TestCreateNewUserAndSession(t *testing.T) {
@@ -57,15 +59,12 @@ func TestCreateNewUserAndSession(t *testing.T) {
 		newUser,
 		mockGenerateRandomID,
 	)
-	
 	if !cmp.Equal(expected, actual) {
 		t.Errorf("Expected: %+v but recieved: %+v", expected, actual)
 	}
-	
 	if len(Sessions) != 1 {
 		t.Errorf("Expected: %+v but recieved: %+v", Sessions, actual)
 	}
-	
 	if !cmp.Equal(Sessions[0], actual) {
 		t.Errorf("Expected: %+v but recieved: %+v", Sessions[0], actual)
 	}
@@ -74,17 +73,44 @@ func TestCreateNewUserAndSession(t *testing.T) {
 func TestAddUserConnToSession(t *testing.T) {
 	setup()
 	var connToAdd = mockConnection{}
-	mockUpgradeConn, nil := connToAdd.Upgrade()
+	mockUpgradeConn, err := connToAdd.Upgrade()
+	if err != nil {
+		t.Errorf("Expected: nil but recieved: %+v", err)
+	}
 	actual := AddUserConnToSession("test-uuid", mockUpgradeConn)
 	if actual != nil {
 		t.Errorf("Expected: nil but recieved: %+v", actual)
 	}
-	var actualConn = Sessions[0].Users[0].Conn
-	if mockUpgradeConn != actualConn {
-		t.Errorf("Expected: %+v but recieved: %+v", mockUpgradeConn, actualConn)
+	var expectedConn = Sessions[0].Users[0].Conn
+	if mockUpgradeConn != expectedConn {
+		t.Errorf("Expected: %+v but recieved: %+v", mockUpgradeConn, expectedConn)
 	}
 }
 
-func TestJoinExistingSession(t *testing.T) {}
+func TestJoinExistingSession(t *testing.T) {
+	existingUser, existingSessionData := setup()
+	var newUser = User{
+		UUID: "test-uuid2",
+	}
+	var sessionToJoin = ExistingSessionReq{
+		JoinSessionID: "mocked-id",
+	}
+	actual, err := JoinExistingSession(sessionToJoin, newUser)
+	if err != nil {
+		t.Errorf("Expected: %+v but recieved: %+v", nil, err)
+	}
+	var expected = Session{
+		SessionID: "mocked-id",
+		CurrentDriver: existingUser,
+		Duration: existingSessionData.Duration,
+		StartTime: existingSessionData.StartTime,
+		EndTime: existingSessionData.Duration + existingSessionData.StartTime,
+		Users: []User{existingUser, newUser},
+	}
+	if !cmp.Equal(expected, actual) {
+		t.Errorf("Expected: %+v but recieved: %+v", expected, actual)
+	}
+}
+
 func TestHandleUpdateSession(t *testing.T) {}
 func TestHandleRemoveSession(t *testing.T) {}
