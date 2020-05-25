@@ -3,8 +3,8 @@ package session
 import (
 	"log"
 	"errors"
-	"github.com/gorilla/websocket"
 	"time"
+	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
 
@@ -45,7 +45,7 @@ type ExistingSessionReq struct {
 // Sessions is a collection of all current sessions
 var Sessions []Session
 
-// UpdateTimerChannel reads updates as they come in via websockets
+// UpdateTimerChannel reads updates as they come in via updateSessionEndpoint
 var UpdateTimerChannel = make(chan Session)
 
 // CreateNewUserAndSession creates new users and sessions
@@ -114,6 +114,18 @@ func (session *Session) broadcastToSessionUsers() {
 		for _, user := range session.Users {
 			user.Conn.WriteJSON(session)
 	}
+}
+
+// RemoveSession ... for a abandoned session
+func RemoveSession(sessionID string) error {
+	// find session by sessionID
+	sessionIndex, sessionErr := findSession(sessionID)
+	if sessionErr != nil {
+		return sessionErr
+	}
+	// remove the session from slice
+	Sessions = append(Sessions[:sessionIndex], Sessions[sessionIndex+1:]...)
+	return nil
 }
 
 func (session *Session) handleTimerEnd() (int, error) {
@@ -185,6 +197,9 @@ func findSession(keyToFind interface{}) (int, error) {
 	switch keyToFind.(type) {
 	case string:
 		for idx, session := range Sessions {
+			if session.SessionID == keyToFind {
+				return idx, nil
+			}
 			for _, user := range session.Users {
 				if user.UUID == keyToFind {
 					return idx, nil
