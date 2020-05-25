@@ -1,8 +1,8 @@
 package readers
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
+	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
 )
 

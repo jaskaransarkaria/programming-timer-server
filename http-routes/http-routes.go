@@ -1,10 +1,10 @@
 package httproutes
 
 import (
-	"github.com/gorilla/websocket"
 	"log"
 	"encoding/json"
 	"net/http"
+	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/session"
 	"github.com/jaskaransarkaria/programming-timer-server/readers"
 	"github.com/jaskaransarkaria/programming-timer-server/utils"

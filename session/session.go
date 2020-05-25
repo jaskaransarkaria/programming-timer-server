@@ -107,6 +107,9 @@ func HandleRemoveUser(conn *websocket.Conn) (error) {
 		return findConnErr
 	}
 	Sessions[sessionIdx].removeUser(userIdx)
+	if len(Sessions[sessionIdx].Users) == 0 {
+		RemoveSession(Sessions[sessionIdx].SessionID)
+	}
 	return nil
 }
 
