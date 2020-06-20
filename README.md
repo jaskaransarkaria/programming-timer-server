@@ -48,7 +48,7 @@ To deploy your changes run (see "Useful Commands"):
 
 ### Todos
 
-- [ ] Add tests
+- [x] Add basic tests to cover Session
 - [ ] Remove `func enableCors`
 - [ ] Add travis CI/ CD  & git branch rules/protection
 - [ ] Add in notifications and prompts to restart the timer
