@@ -7,11 +7,18 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
+// replace the *websocket.Conn with an iterface here... which can return websocket.Conn
+// perhaps use mockery to generate the mocked code
+// https://medium.com/agrea-technogies/mocking-dependencies-in-go-bb9739fef008
+type Connector interface {
+	WriteJSON(v interface{}) error
+	ReadMessage() (int, []byte, error)
+}
 
 // User is ... each connected user
 type User struct {
 	UUID string
-	Conn *websocket.Conn
+	Conn Connector
 }
 
 // Session is ... each active session
@@ -193,8 +200,6 @@ func (session *Session) resetTimer() {
 func (session *Session) addUser(user User) {
 		session.Users = append(session.Users, user)
 	}
-
-
 
 func findSession(keyToFind interface{}) (int, error) {
 	switch keyToFind.(type) {

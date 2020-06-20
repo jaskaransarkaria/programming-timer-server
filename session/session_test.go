@@ -6,12 +6,17 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/gorilla/websocket"
+	// "github.com/stretchr/testify/assert"
+	"github.com/jaskaransarkaria/programming-timer-server/mocks"
 )
+
 
 type mockConnection struct {
 }
 
-func (u *mockConnection) Upgrade() (*websocket.Conn, error) {
+// problem here is that im actually still using the gorilla websock sooo when I call broadcast user i'm still trying to make calls with the Conns
+
+func (c *mockConnection) Upgrade() (*websocket.Conn, error) {
 	return &websocket.Conn{}, nil
 }
 
@@ -19,18 +24,20 @@ func mockGenerateRandomID(expectedID string) string {
 	return fmt.Sprintf("mocked-id-%d", len(Sessions))
 }
 
-func setup() (User, StartTimerReq, int) {
-	var connToAdd = mockConnection{}
-	mockUpgradeConn, _ := connToAdd.Upgrade()
-
+func setup() (User, StartTimerReq, int, *mocks.Connector) {
+	// create a new session with a user
+	// var connToAdd = mockConnection{}
+	// mockUpgradeConn, _ := connToAdd.Upgrade()
+	mockConn := &mocks.Connector{}
 	var newSessionData = StartTimerReq{
 		Duration: 60000,
 		StartTime: 1000,
 	}
-
+	mockConn.On("ReadMessage").Return(1, []byte("test byte array"), nil)
 	var newUser = User{
 		UUID: "test-uuid",
-		Conn: mockUpgradeConn,
+		// Conn: mockUpgradeConn, // add the mock connector here
+		Conn: mockConn, // add the mock connector here
 	}
 
 	var sessionsLengthBeforeSessionCreated = len(Sessions)
@@ -41,7 +48,7 @@ func setup() (User, StartTimerReq, int) {
 		mockGenerateRandomID,
 	)
 
-	return newUser, newSessionData, sessionsLengthBeforeSessionCreated
+	return newUser, newSessionData, sessionsLengthBeforeSessionCreated, mockConn
 }
 
 func cleanup(sessionID string) {
@@ -85,10 +92,10 @@ func TestCreateNewUserAndSession(t *testing.T) {
 }
 
 func TestAddUserConnToSession(t *testing.T) {
-	_, _, sessionsLengthBeforeSessionCreated := setup()
+	_, _, sessionsLengthBeforeSessionCreated, _ := setup()
 	var sessionID = fmt.Sprintf("mocked-id-%d", sessionsLengthBeforeSessionCreated)
 	var connToAdd = mockConnection{}
-	mockUpgradeConn, err := connToAdd.Upgrade()
+	mockUpgradeConn, err := connToAdd.Upgrade() // add mock conn here
 	if err != nil {
 		t.Errorf("Expected: nil but recieved: %+v", err)
 	}
@@ -104,9 +111,9 @@ func TestAddUserConnToSession(t *testing.T) {
 }
 
 func TestJoinExistingSession(t *testing.T) {
-	existingUser, existingSessionData, sessionsLengthBeforeSessionCreated := setup()
+	existingUser, existingSessionData, sessionIndex, _ := setup()
 
-	sessionID := fmt.Sprintf("mocked-id-%d", sessionsLengthBeforeSessionCreated)
+	sessionID := fmt.Sprintf("mocked-id-%d", sessionIndex)
 	var newUser = User{
 		UUID: "test-uuid2",
 	}
@@ -137,7 +144,7 @@ func TestJoinExistingSession(t *testing.T) {
 }
 
 func TestRemoveSession(t *testing.T) {
-	_, _, sessionsLengthBeforeSessionCreated := setup()
+	_, _, sessionsLengthBeforeSessionCreated, _ := setup()
 	sessionID := fmt.Sprintf("mocked-id-%d", sessionsLengthBeforeSessionCreated)
 	removeSessionErr := RemoveSession(sessionID)
 	
@@ -147,7 +154,7 @@ func TestRemoveSession(t *testing.T) {
 	
 	if len(Sessions) != sessionsLengthBeforeSessionCreated {
 		t.Errorf("Expected %d sessions in Sessions slice but received %d\n with %+v",
-		sessionsLengthBeforeSessionCreated,
+			sessionsLengthBeforeSessionCreated,
 			len(Sessions),
 			Sessions,
 		)
@@ -158,11 +165,31 @@ func TestRemoveSession(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestHandleUpdateSession(t *testing.T) {
+	// take an existing session
+	_, _, sessionIndex, mockConnInitUser := setup();
+	// add another user (so we can verify that the function is switching driver correctly
+	sessionID := fmt.Sprintf("mocked-id-%d", sessionIndex)
+	mockConnJoiningUser := &mocks.Connector{}
+
+	var newUser = User{
+		UUID: "test-uuid2",
+		Conn: mockConnJoiningUser,
+	}
 	
-	// func TestHandleUpdateSession(t *testing.T) {}
-	
+	var sessionToJoin = ExistingSessionReq{
+		JoinSessionID: sessionID,
+	}
+	testSession, _ := JoinExistingSession(sessionToJoin, newUser)
+	// mock broadcast to all sessionUsers
+	mockConnInitUser.On("WriteJSON", &Sessions[sessionIndex]).Return(nil)
+	mockConnJoiningUser.On("WriteJSON", &Sessions[sessionIndex]).Return(nil)
+	// fire handle time end  (changes driver and resets the timer)
+	HandleUpdateSession(testSession)
 
-
-
-
+	if Sessions[sessionIndex].CurrentDriver.UUID != newUser.UUID {
+		t.Errorf("The Driver has not been correctly changed")
+	}
 }
