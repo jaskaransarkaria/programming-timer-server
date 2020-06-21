@@ -16,7 +16,7 @@ jobs:
       name: "Build and Push docker image"
       script: |
         docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
-        docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
         docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
 
 stages:
