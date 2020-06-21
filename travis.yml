@@ -1,11 +1,9 @@
-language: go
-go: 
-  - 1.14.2
-# env:
-#   - "PATH=/home/travis/gopath/bin:$PATH"
+language: bash
 
-before_script:
-  - go vet ./...
+required: sudo
+
+services:
+  - docker
 
 script:
-  - go test -v ./...
+  - echo "building..."
