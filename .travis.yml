@@ -19,4 +19,4 @@ jobs:
 stages:
   - Tests and Linting
   - name: Build and Push
-      # if: branch = master
+      # if: branch = mastergit a
