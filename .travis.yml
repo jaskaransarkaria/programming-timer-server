@@ -15,11 +15,9 @@ jobs:
     - stage: "Build Docker Image"
       name: "Build and Push docker image"
       script: |
-        # echo "$TRAVIS_TAG"
-        echo "$TRAVIS_BRANCH"
-        docker build -t jaskaransarkaria/timer-server:"$TRAVIS_BRANCH" .
+        docker build -t timer-server:"$TRAVIS_TAG" .
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin 
-        docker push jaskaransarkaria/timer-server:"$TRAVIS_BRANCH"
+        docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
 
 stages:
   - Tests and Linting
