@@ -8,8 +8,12 @@ before_script:
 jobs:
   include:
     - stage: "Tests"
-    name: "Unit Tests"
-    script: go test -v ./...
+      name: "Unit Tests"
+      script: go test -v ./...
     - stage: "Build and Push Image"
-    name: "Build docker image"
-    script: echo "building..."
+      name: "Build docker image"
+      script: echo "building..."
+
+stages:
+  - Tests
+  - Build and Push
