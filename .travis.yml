@@ -14,9 +14,9 @@ jobs:
       script: go test -v ./...
     - stage: "Build and Push Image"
       name: "Build docker image"
-      script: docker build -t travis-build .
+      script: docker build -t jaskaransarkaria/timer-server:"${TRAVIS_TAG}" .
 
 stages:
   - Tests and Linting
   - name: Build and Push
-      # if: branch = mastergit a
+      if: (tag =~ ^v) && (branch = master)
