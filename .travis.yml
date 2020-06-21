@@ -18,5 +18,5 @@ jobs:
 
 stages:
   - Tests and Linting
-  - name: Build and Push
+  - name: Build and Push Image
       if: tag IS present
