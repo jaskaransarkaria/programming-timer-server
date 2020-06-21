@@ -7,9 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
-// replace the *websocket.Conn with an iterface here... which can return websocket.Conn
-// perhaps use mockery to generate the mocked code
-// https://medium.com/agrea-technogies/mocking-dependencies-in-go-bb9739fef008
+
+// Connector is .. the User's current connection 
 type Connector interface {
 	WriteJSON(v interface{}) error
 	ReadMessage() (int, []byte, error)

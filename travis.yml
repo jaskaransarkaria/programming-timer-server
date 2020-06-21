@@ -1,2 +1,9 @@
 language: go
-go: 1.14.x
+go: 
+  - 1.14.2
+# env:
+#   - "PATH=/home/travis/gopath/bin:$PATH"
+
+before_script:
+  - go vet ./...
+
