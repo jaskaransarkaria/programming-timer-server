@@ -25,4 +25,4 @@ stages:
   - Tests and Linting
   - name: "Build Docker Image"
     if: tag IS present
-  - name: "Push Docker Image"
+  - "Push Docker Image"
