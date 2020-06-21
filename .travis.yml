@@ -1,8 +1,22 @@
 language: go
 go: 
   - 1.14.2
-# env:
-#   - "PATH=/home/travis/gopath/bin:$PATH"
 
 before_script:
   - go vet ./...
+
+# if merged into master then build
+# build the changes by:
+  # - building the docker file
+  # - pushing the docker file to kubernetes
+
+# if tagged (if possible tagged and on master) then 
+# deploy to kubernetes
+jobs:
+  include:
+    - stage: "Tests"
+    name: "Unit Tests"
+    script: go test -v ./...
+    - stage: "Build and Push Image"
+    name: "Build docker image"
+    script: echo "building..."
