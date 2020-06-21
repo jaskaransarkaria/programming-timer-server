@@ -2,18 +2,21 @@ language: go
 go: 
   - 1.14.2
 
-before_script:
-  - go vet ./...
+services:
+  - docker
 
 jobs:
   include:
-    - stage: "Tests"
+    - stage: "Tests and Linting"
+      name: "Linting"
+      script: go vet ./...
       name: "Unit Tests"
       script: go test -v ./...
     - stage: "Build and Push Image"
       name: "Build docker image"
-      script: echo "building..."
+      script: docker build -t travis-build .
 
 stages:
-  - Tests
-  - Build and Push
+  - Tests and Linting
+  - name: Build and Push
+      # if: branch = master
