@@ -12,9 +12,10 @@ jobs:
       script: go vet ./...
       name: "Unit Tests"
       script: go test -v ./...
-    - stage: "Build and Push Image"
+    - stage: "Build Docker Image"
       name: "Build docker image"
       script: docker build -t jaskaransarkaria/timer-server:"${TRAVIS_TAG}" .
+    - stage:
       name: "Push Docker Image"
       script: |
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin 
@@ -22,5 +23,6 @@ jobs:
 
 stages:
   - Tests and Linting
-  - name: "Build and Push Image"
+  - name: "Build Docker Image"
     if: tag IS present
+  - name: "Push Docker Image"
