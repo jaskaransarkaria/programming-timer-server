@@ -1,0 +1,22 @@
+language: go
+go: 
+  - 1.14.2
+
+services:
+  - docker
+
+jobs:
+  include:
+    - stage: "Tests and Linting"
+      name: "Linting"
+      script: go vet ./...
+      name: "Unit Tests"
+      script: go test -v ./...
+    - stage: "Build and Push Image"
+      name: "Build docker image"
+      script: docker build -t jaskaransarkaria/timer-server:"${TRAVIS_TAG}" .
+
+stages:
+  - Tests and Linting
+  - name: "Build and Push Image"
+    if: tag IS present
