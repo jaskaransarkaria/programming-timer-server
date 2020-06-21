@@ -57,7 +57,10 @@ func newSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 		newUser, 
 		utils.GenerateRandomID,
 	)
-	resp := session.InitSessionResponse{newSession, newUser}
+	resp := session.InitSessionResponse{
+		Session: newSession, 
+		User: newUser,
+	}
 	newSessionRes, _ := json.Marshal(resp)
 	w.Write(newSessionRes)
 }
@@ -77,7 +80,10 @@ func joinSessionEndpoint(w http.ResponseWriter, r *http.Request) {
 		bufferedErr, _ := json.Marshal(err)
 		w.Write(bufferedErr)
 	}
-	resp := session.InitSessionResponse{matchedSession, newUser}
+	resp := session.InitSessionResponse{
+		Session: matchedSession, 
+		User: newUser,
+	}
 	bufferedExistingSession, _ := json.Marshal(resp)
 	w.Write(bufferedExistingSession)
 }
