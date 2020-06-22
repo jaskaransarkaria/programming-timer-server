@@ -12,7 +12,7 @@ jobs:
       script: go vet ./...
       name: "Unit Tests"
       script: go test -v ./...
-    - stage: "Build Docker Image"
+    - stage: "Build and Push Docker Image"
       name: "Build and Push Docker Image"
       script: |
         docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
