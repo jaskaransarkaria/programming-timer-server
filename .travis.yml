@@ -15,11 +15,11 @@ jobs:
     - stage: "Build and Push Docker Image"
       name: "Build and Push Docker Image"
       script:
-      - docker build -t jaskaransarkaria/timer-server:test2 .
+      - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      - docker push jaskaransarkaria/timer-server:test2
+      - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
 
 stages:
   - Tests and Linting
   - name: "Build and Push Docker Image"
-    # if: tag IS present
+    if: tag IS present
