@@ -13,7 +13,7 @@ jobs:
       name: "Unit Tests"
       script: go test -v ./...
     - stage: "Build Docker Image"
-      name: "Build and Push docker image"
+      name: "Build and Push Docker Image"
       script: |
         docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
