@@ -16,7 +16,6 @@ jobs:
       name: "Build and Push Docker Image"
       script:
       - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
-      - echo "$DOCKER_PASSWORD"
       - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
       # next step is to deploy to kubernetes

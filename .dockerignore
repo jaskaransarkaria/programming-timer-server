@@ -3,3 +3,11 @@ secret.yaml
 tls.crt
 
 tls.key
+
+.kubernetes/
+
+.gitignore
+
+.travis.yaml
+
+scripts/
