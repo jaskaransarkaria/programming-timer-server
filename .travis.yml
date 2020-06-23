@@ -24,4 +24,4 @@ jobs:
 stages:
   - Tests and Linting
   - name: "Build and Push Docker Image"
-    if: tag IS present
+    # if: tag IS present
