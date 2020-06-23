@@ -16,11 +16,12 @@ jobs:
       name: "Build and Push Docker Image"
       script:
       - docker build -t jaskaransarkaria/timer-server:test .
-      - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+      - echo "$DOCKER_PASSWORD"
+      - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       - docker push jaskaransarkaria/timer-server:test
       # next step is to deploy to kubernetes
 
 stages:
   - Tests and Linting
   - name: "Build and Push Docker Image"
-    # if: tag IS present
+    if: tag IS present
