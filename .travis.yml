@@ -15,9 +15,9 @@ jobs:
     - stage: "Build and Push Docker Image"
       name: "Build and Push Docker Image"
       script:
-      - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
+      - docker build -t jaskaransarkaria/timer-server:test .
       - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-      - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
+      - docker push jaskaransarkaria/timer-server:test
       # next step is to deploy to kubernetes
 
 stages:
