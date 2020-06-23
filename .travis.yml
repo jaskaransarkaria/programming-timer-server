@@ -18,6 +18,7 @@ jobs:
       - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
       - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
       - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
+      # next step is to deploy to kubernetes
 
 stages:
   - Tests and Linting
