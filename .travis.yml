@@ -22,7 +22,7 @@ jobs:
     - stage: Deploy to Kubernetes
       before_install:
         - curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      script: kubectl version
+      script: kubectl version --client
 
       # next step is to deploy to kubernetes
 
