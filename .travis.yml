@@ -27,10 +27,11 @@ jobs:
       # next step is to deploy to kubernetes
 
 stages:
+  - Tests and Linting
+  if: tag IS present
+  - name: "Build and Push Docker Image"
+  if: tag IS present
   - Deploy to Kubernetes
-  # - Tests and Linting
-  # - name: "Build and Push Docker Image"
-  #   if: tag IS present
 
 
 
