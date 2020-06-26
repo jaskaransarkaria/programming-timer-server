@@ -28,7 +28,7 @@ jobs:
       - gcloud auth activate-service-account travis-deployer@jobspeed.iam.gserviceaccount.com --key-file=client-secret.json
       - gcloud container clusters get-credentials jobspeed-production --zone europe-west2-a --project jobspeed
       - kubectl config view
-      - kubectl get pods -n jobspeed-production
+      - kubectl get pods -n timer-production
       # next step is to deploy to kubernetes
 
 stages:
