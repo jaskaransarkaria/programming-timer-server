@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: timer-server
-        image: jaskaransarkaria/timer-server:2
+        image: jaskaransarkaria/timer-server:replace_with_git_tag
         ports:
         - containerPort: 8080
         livenessProbe:

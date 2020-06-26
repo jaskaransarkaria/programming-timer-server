@@ -29,13 +29,18 @@ jobs:
       - gcloud container clusters get-credentials jobspeed-production --zone europe-west2-a --project jobspeed
       - kubectl config view
       - kubectl get pods -n timer-production
+      - sed -i 's/replace_with_git_tag/"$TRAVIS_TAG"/' .kubernetes/deployment.yaml
+      - kubectl apply -f .kubernetes/deployment.yaml
+      - kubectl scale --replicas=0 deployment timer-server
+      - kubectl scale --replicas=1 deployment timer-server
       # next step is to deploy to kubernetes
 
 stages:
   - Tests and Linting
-  - Deploy to Kubernetes
   - name: "Build and Push Docker Image"
-    if: tag IS present
+  if: tag IS present
+  - Deploy to Kubernetes
+  if: tag IS present
 
 
 
