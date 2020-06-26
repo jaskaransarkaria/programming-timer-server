@@ -25,10 +25,10 @@ jobs:
         - curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
       script: 
       - kubectl version --client
-      - kubectl config view
       - gcloud auth activate-service-account travis-deployer@jobspeed.iam.gserviceaccount.com --key-file=client-secret.json
       - gcloud container clusters get-credentials jobspeed-production --zone europe-west2-a --project jobspeed
-      - kubectl get pods
+      - kubectl config view
+      - kubectl get pods -n jobspeed-production
       # next step is to deploy to kubernetes
 
 stages:
