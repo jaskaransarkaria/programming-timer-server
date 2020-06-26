@@ -6,7 +6,7 @@
 
 ## tl;dr
 
-Keep time and turn order when you are pair programming, you can find the client code [here](https://github.com/jaskaransarkaria/programming-timer-client).
+Keep time and turn order when you are pair programming, you can find the client code [here](https://github.com/jaskaransarkaria/programming-timer).
 
 ## Git and Deployment
 
