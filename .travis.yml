@@ -26,7 +26,7 @@ jobs:
       script: 
       - kubectl version --client
       - kubectl config view
-
+      - gcloud container clusters get-credentials jobspeed-production
       # next step is to deploy to kubernetes
 
 stages:
