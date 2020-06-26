@@ -31,7 +31,4 @@ stages:
   - Tests and Linting
   - Deploy to Kubernetes
   - name: "Build and Push Docker Image"
-  if: tag IS present
-
-
-
+    if: tag IS present
