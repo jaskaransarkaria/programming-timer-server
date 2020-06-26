@@ -13,7 +13,7 @@ jobs:
       - go vet ./...
       - go test -v ./...
     - stage: "Build and Push Docker Image"
-      script:
+      script:Z
       - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
       - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
@@ -35,6 +35,6 @@ jobs:
 stages:
   - name: Tests and Linting
   - name: Build and Push Docker Image
-    if: tags IS present
+    if: tag IS present
   - name: Deploy to Kubernetes
-    if: tags IS present
+    if: tag IS present
