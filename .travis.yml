@@ -25,12 +25,8 @@ jobs:
       - kubectl version --client
       - gcloud auth activate-service-account travis-deployer@jobspeed.iam.gserviceaccount.com --key-file=client-secret.json
       - gcloud container clusters get-credentials jobspeed-production --zone europe-west2-a --project jobspeed
-      - kubectl config view
-      - kubectl get pods -n timer-production
       - sed -i "s/replace_with_git_tag/$TRAVIS_TAG/" .kubernetes/deployment.yaml
       - kubectl apply -f .kubernetes/deployment.yaml
-      - kubectl scale --replicas=0 deployment timer-server
-      - kubectl scale --replicas=1 deployment timer-server
 
 stages:
   - name: Tests and Linting
