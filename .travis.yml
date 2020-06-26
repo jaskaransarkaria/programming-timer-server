@@ -33,10 +33,17 @@ jobs:
       - kubectl apply -f .kubernetes/deployment.yaml
       - kubectl scale --replicas=0 deployment timer-server
       - kubectl scale --replicas=1 deployment timer-server
-      # next step is to deploy to kubernetes
 
 stages:
   - Tests and Linting
   - Deploy to Kubernetes
   - name: "Build and Push Docker Image"
-  if: tag IS present
+    if: tag IS present
+
+
+
+
+
+
+
+
