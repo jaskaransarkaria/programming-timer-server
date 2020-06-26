@@ -1,5 +1,7 @@
 # Pair Programming Timer - Server
 
+[![Build Status](https://travis-ci.com/jaskaransarkaria/programming-timer-server.svg?branch=master)](https://travis-ci.com/jaskaransarkaria/programming-timer-server)
+
 ---
 
 ## tl;dr
@@ -11,6 +13,7 @@ Keep time and turn order when you are pair programming, you can find the client 
 1) Branch from `master`
 2) Make your changes
 4) Merge back into `master`
+5) *Deploy* by tagging mater eg.`v1.0.0`
 
 ## Stack
 
@@ -38,7 +41,9 @@ To run the server locally
 
 ## Deployment
 
-Currently deployment is driven by bash scripts found in `scripts/`. _You must currently cd into scripts/ to execute them_.
+Travis CI will run tests on each push and will deploy when master is tagged.
+
+Local deployment is driven by bash scripts found in `scripts/`. _You must currently cd into scripts/ to execute them_.
 
 To deploy your changes run (see "Useful Commands"):
 
@@ -49,8 +54,9 @@ To deploy your changes run (see "Useful Commands"):
 ### Todos
 
 - [x] Add basic tests to cover Session
+- [x] Add travis CI/ CD  & git branch rules/protection
+
 - [ ] Remove `func enableCors`
-- [ ] Add travis CI/ CD  & git branch rules/protection
 - [ ] Add in notifications and prompts to restart the timer
 - [ ] Add environment config
 - [ ] Tidy up bash scripts so can be called from proj root, prompt for required arguments and set VERSION_NUMBER so it is consistent across docker and k8 manifest.
