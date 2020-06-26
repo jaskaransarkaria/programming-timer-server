@@ -13,13 +13,11 @@ jobs:
       - go vet ./...
       - go test -v ./...
     - stage: "Build and Push Docker Image"
-      if: tags IS present
       script:
       - docker build -t jaskaransarkaria/timer-server:"$TRAVIS_TAG" .
       - echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
       - docker push jaskaransarkaria/timer-server:"$TRAVIS_TAG"
     - stage: Deploy to Kubernetes
-      if: tags IS present
       before_install:
         - openssl aes-256-cbc -K $encrypted_2fd045226a67_key -iv $encrypted_2fd045226a67_iv -in client-secret.json.enc -out client-secret.json -d
         - curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -35,6 +33,8 @@ jobs:
       - kubectl scale --replicas=1 deployment timer-server
 
 stages:
-  - Tests and Linting
-  - Build and Push Docker Image
-  - Deploy to Kubernetes
+  - name: Tests and Linting
+  - name: Build and Push Docker Image
+    if: tags IS present
+  - name: Deploy to Kubernetes
+    if: tags IS present
