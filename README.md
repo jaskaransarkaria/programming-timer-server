@@ -55,8 +55,8 @@ To deploy your changes run (see "Useful Commands"):
 
 - [x] Add basic tests to cover Session
 - [x] Add travis CI/ CD  & git branch rules/protection
+- [x] Add in notifications and prompts to restart the timer
 
 - [ ] Remove `func enableCors`
-- [ ] Add in notifications and prompts to restart the timer
 - [ ] Add environment config
 - [ ] Tidy up bash scripts so can be called from proj root, prompt for required arguments and set VERSION_NUMBER so it is consistent across docker and k8 manifest.
