@@ -183,11 +183,15 @@ func TestHandleUpdateSession(t *testing.T) {
 		JoinSessionID: sessionID,
 	}
 	testSession, _ := JoinExistingSession(sessionToJoin, newUser)
+	mockUpdateRequest := UpdateRequest{
+		SessionID: testSession.SessionID,
+		UpdatedDuration: testSession.Duration,
+	}
 	// mock broadcast to all sessionUsers
 	mockConnInitUser.On("WriteJSON", &Sessions[sessionIndex]).Return(nil)
 	mockConnJoiningUser.On("WriteJSON", &Sessions[sessionIndex]).Return(nil)
 	// fire handle time end  (changes driver and resets the timer)
-	HandleUpdateSession(testSession)
+	HandleUpdateSession(mockUpdateRequest)
 
 	if Sessions[sessionIndex].CurrentDriver.UUID != newUser.UUID {
 		t.Errorf("The Driver has not been correctly changed")

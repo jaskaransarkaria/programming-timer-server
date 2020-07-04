@@ -48,11 +48,17 @@ type ExistingSessionReq struct {
 	JoinSessionID string `json:"joinSession"`
 }
 
+// UpdateRequest .. Incoming timer update from client (current driver)
+type UpdateRequest struct {
+	SessionID string `json:"sessionId"`
+	UpdatedDuration int64 `json:"updatedDuration,omitempty"`
+}
+
 // Sessions is a collection of all current sessions
 var Sessions []Session
 
 // UpdateTimerChannel reads updates as they come in via updateSessionEndpoint
-var UpdateTimerChannel = make(chan Session)
+var UpdateTimerChannel = make(chan UpdateRequest)
 
 // CreateNewUserAndSession creates new users and sessions
 func CreateNewUserAndSession(
@@ -97,8 +103,8 @@ func JoinExistingSession(joinExistingSessionData ExistingSessionReq, newUser Use
 }
 
 // HandleUpdateSession when a timer finishes
-func HandleUpdateSession(sessionToUpdate Session) {
-	updatedSessionIdx, updateErr := sessionToUpdate.handleTimerEnd()
+func HandleUpdateSession(sessionToUpdate UpdateRequest) {
+	updatedSessionIdx, updateErr := handleTimerEnd(sessionToUpdate)
 	if updateErr != nil {
 		log.Println("updateError", updateErr)
 		return
@@ -137,14 +143,19 @@ func RemoveSession(sessionID string) error {
 	return nil
 }
 
-func (session *Session) handleTimerEnd() (int, error) {
-	updatedSessionIdx, err := getExistingSession(session.SessionID)
+// Map the incoming session request to an in-memory session
+func handleTimerEnd(session UpdateRequest) (int, error) {
+	mappedSessionIdx, err := getExistingSession(session.SessionID)
 	if err != nil  {
 		return -1, err
 	}
-	Sessions[updatedSessionIdx].changeDriver()
-	Sessions[updatedSessionIdx].resetTimer()
-	return updatedSessionIdx, nil
+	// update duration
+	if session.UpdatedDuration > 0 {
+		Sessions[mappedSessionIdx].Duration = session.UpdatedDuration
+	}
+	Sessions[mappedSessionIdx].changeDriver()
+	Sessions[mappedSessionIdx].resetTimer()
+	return mappedSessionIdx, nil
 }
 
 func getExistingSession(desiredSessionID string) (int, error) {

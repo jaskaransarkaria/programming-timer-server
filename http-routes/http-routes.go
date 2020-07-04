@@ -31,7 +31,7 @@ func wsEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateSessionEndpoint(w http.ResponseWriter, r *http.Request) {
-	var sessionToUpdate session.Session
+	var sessionToUpdate session.UpdateRequest
 	var requestBody = r.Body
 	enableCors(&w)
 	err := json.NewDecoder(requestBody).Decode(&sessionToUpdate)
