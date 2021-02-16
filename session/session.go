@@ -1,14 +1,15 @@
 package session
 
 import (
-	"log"
 	"errors"
+	"log"
 	"time"
+
 	"github.com/gorilla/websocket"
 	"github.com/jaskaransarkaria/programming-timer-server/utils"
 )
 
-// Connector is .. the User's current connection 
+// Connector is .. the User's current connection
 type Connector interface {
 	WriteJSON(v interface{}) error
 	ReadMessage() (int, []byte, error)
@@ -22,24 +23,34 @@ type User struct {
 
 // Session is ... each active session
 type Session struct {
-	SessionID string
-	CurrentDriver User
-	Duration int64
-	StartTime int64
-	EndTime int64
+	SessionID       string
+	CurrentDriver   User
+	Duration        int64
+	StartTime       int64
+	EndTime         int64
 	PreviousDrivers []User
-	Users []User
+	Users           []User
+}
+
+// PauseSessionResponse ... the time when a user pauses the timer
+type PauseSessionResponse struct {
+	PauseTime int64
+}
+
+// UnpauseSessionResponse ... the time when a user restarts the timer
+type UnpauseSessionResponse struct {
+	UnpauseTime int64
 }
 
 // InitSessionResponse is ... on inital connection
 type InitSessionResponse struct {
 	Session Session
-	User User
+	User    User
 }
 
 // StartTimerReq ... JSON request from the client
 type StartTimerReq struct {
-	Duration int64 `json:"duration"`
+	Duration  int64 `json:"duration"`
 	StartTime int64 `json:"startTime"`
 }
 
@@ -50,8 +61,20 @@ type ExistingSessionReq struct {
 
 // UpdateRequest .. Incoming timer update from client (current driver)
 type UpdateRequest struct {
+	SessionID       string `json:"sessionId"`
+	UpdatedDuration int64  `json:"updatedDuration,omitempty"`
+}
+
+// PauseRequest ... incoming pause time and session ID from client
+type PauseRequest struct {
 	SessionID string `json:"sessionId"`
-	UpdatedDuration int64 `json:"updatedDuration,omitempty"`
+	PauseTime int64  `json:"pauseTime"`
+}
+
+// UnpauseRequest ... incoming pause time and session ID from client
+type UnpauseRequest struct {
+	SessionID   string `json:"sessionId"`
+	UnpauseTime int64  `json:"unpauseTime"`
 }
 
 // Sessions is a collection of all current sessions
@@ -60,18 +83,24 @@ var Sessions []Session
 // UpdateTimerChannel reads updates as they come in via updateSessionEndpoint
 var UpdateTimerChannel = make(chan UpdateRequest)
 
+// PauseTimerChannel reads pause requests as they come in via pauseSessionEndpoint
+var PauseTimerChannel = make(chan PauseRequest)
+
+// UnpauseTimerChannel reads restart requests as they come in via unpauseSessionEndpoint
+var UnpauseTimerChannel = make(chan UnpauseRequest)
+
 // CreateNewUserAndSession creates new users and sessions
 func CreateNewUserAndSession(
 	newSessionData StartTimerReq,
 	newUser User,
 	generateIDFunc utils.RandomGenerator,
-	) Session {
+) Session {
 	var newSession = Session{
-		SessionID: generateIDFunc("session"),
+		SessionID:     generateIDFunc("session"),
 		CurrentDriver: newUser,
-		Duration: newSessionData.Duration,
-		StartTime: newSessionData.StartTime,
-		EndTime: newSessionData.Duration + newSessionData.StartTime,
+		Duration:      newSessionData.Duration,
+		StartTime:     newSessionData.StartTime,
+		EndTime:       newSessionData.Duration + newSessionData.StartTime,
 	}
 	newSession.addUser(newUser)
 	Sessions = append(Sessions, newSession)
@@ -81,11 +110,11 @@ func CreateNewUserAndSession(
 // AddUserConnToSession adds the ws connection to the relevant session
 func AddUserConnToSession(uuid string, conn *websocket.Conn) error {
 	sessionIdx, sessionErr := findSession(uuid)
-		if sessionErr != nil {
+	if sessionErr != nil {
 		return sessionErr
 	}
 	userIdx, userErr := Sessions[sessionIdx].findUser(uuid)
-		if userErr != nil {
+	if userErr != nil {
 		return userErr
 	}
 	Sessions[sessionIdx].Users[userIdx].Conn = conn
@@ -109,11 +138,34 @@ func HandleUpdateSession(sessionToUpdate UpdateRequest) {
 		log.Println("updateError", updateErr)
 		return
 	}
-	Sessions[updatedSessionIdx].broadcastToSessionUsers()
+	Sessions[updatedSessionIdx].broadcast(Sessions[updatedSessionIdx])
+}
+
+// HandlePauseSession when the driver pauses the timer
+func HandlePauseSession(sessionToPause PauseRequest) {
+	pauseTime := PauseSessionResponse{PauseTime: sessionToPause.PauseTime}
+	log.Println(sessionToPause)
+	pausedSessionIdx, pauseErr := getExistingSession(sessionToPause.SessionID)
+	if pauseErr != nil {
+		log.Println("pauseError", pauseErr)
+		return
+	}
+	Sessions[pausedSessionIdx].broadcast(pauseTime)
+}
+
+// HandleUnpauseSession when the driver pauses the timer
+func HandleUnpauseSession(sessionToUnpause UnpauseRequest) {
+	unpauseTime := UnpauseSessionResponse{UnpauseTime: sessionToUnpause.UnpauseTime}
+	unpausedSessionIdx, unpauseErr := getExistingSession(sessionToUnpause.SessionID)
+	if unpauseErr != nil {
+		log.Println("pauseError", unpauseErr)
+		return
+	}
+	Sessions[unpausedSessionIdx].broadcast(unpauseTime)
 }
 
 // HandleRemoveUser ... of a disconneted user from the relevent session
-func HandleRemoveUser(conn *websocket.Conn) (error) {
+func HandleRemoveUser(conn *websocket.Conn) error {
 	sessionIdx, userIdx, findConnErr := findUserByConn(conn)
 	if findConnErr != nil {
 		return findConnErr
@@ -125,9 +177,10 @@ func HandleRemoveUser(conn *websocket.Conn) (error) {
 	return nil
 }
 
-func (session *Session) broadcastToSessionUsers() {
-		for _, user := range session.Users {
-			user.Conn.WriteJSON(session)
+func (session *Session) broadcast(payload interface{}) {
+	for _, user := range session.Users {
+		log.Println("broadcast", payload)
+		user.Conn.WriteJSON(payload)
 	}
 }
 
@@ -146,7 +199,7 @@ func RemoveSession(sessionID string) error {
 // Map the incoming session request to an in-memory session
 func handleTimerEnd(session UpdateRequest) (int, error) {
 	mappedSessionIdx, err := getExistingSession(session.SessionID)
-	if err != nil  {
+	if err != nil {
 		return -1, err
 	}
 	// update duration
@@ -159,7 +212,7 @@ func handleTimerEnd(session UpdateRequest) (int, error) {
 }
 
 func getExistingSession(desiredSessionID string) (int, error) {
-	for idx, session :=  range Sessions {
+	for idx, session := range Sessions {
 		if session.SessionID == desiredSessionID {
 			return idx, nil
 		}
@@ -190,14 +243,14 @@ func (session *Session) selectNewDriver() {
 		}
 	}
 }
-	func (session *Session) hasUserBeenDriver(uuid string) bool {
-		if len(session.PreviousDrivers) > 0 {
-			for _, prevDriver := range session.PreviousDrivers {
-				if uuid == prevDriver.UUID {
-					return true
-				}
+func (session *Session) hasUserBeenDriver(uuid string) bool {
+	if len(session.PreviousDrivers) > 0 {
+		for _, prevDriver := range session.PreviousDrivers {
+			if uuid == prevDriver.UUID {
+				return true
 			}
 		}
+	}
 	return false
 }
 
@@ -208,8 +261,8 @@ func (session *Session) resetTimer() {
 }
 
 func (session *Session) addUser(user User) {
-		session.Users = append(session.Users, user)
-	}
+	session.Users = append(session.Users, user)
+}
 
 func findSession(keyToFind interface{}) (int, error) {
 	switch keyToFind.(type) {
@@ -267,7 +320,7 @@ func (session *Session) removeUser(userIdx int) {
 func (session *Session) resetCurrentDriver(userToBeRemoved User) {
 	if userToBeRemoved == session.CurrentDriver {
 		session.changeDriver()
-		session.broadcastToSessionUsers()
+		session.broadcast(session)
 	}
 }
 

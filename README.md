@@ -38,6 +38,7 @@ To run the server locally
   * `scripts/deploy.sh $VERSION_NUMBER` - Deploys any changes to kubernetes manifests, builds a new docker image, pushes it to docker hub and finally scales the deployment to pull the newly created image.
   * `scripts/deploy_kubernetes_config.sh` - Deploys just kubernetes manifest changes (kubernetes secret is excluded from the script).
   * `scripts/push_docker.sh $VERSION_NUMBER` - Builds and pushes the code to dockerhub with a $VERSION_NUMBER as a tag.
+  * `go test -v ./...` - Runs all tests
 
 ## Deployment
 

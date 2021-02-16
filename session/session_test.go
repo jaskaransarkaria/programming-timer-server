@@ -3,13 +3,14 @@ package session
 import (
 	"fmt"
 	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/gorilla/websocket"
+
 	// "github.com/stretchr/testify/assert"
 	"github.com/jaskaransarkaria/programming-timer-server/mocks"
 )
-
 
 type mockConnection struct {
 }
@@ -30,7 +31,7 @@ func setup() (User, StartTimerReq, int, *mocks.Connector) {
 	// mockUpgradeConn, _ := connToAdd.Upgrade()
 	mockConn := &mocks.Connector{}
 	var newSessionData = StartTimerReq{
-		Duration: 60000,
+		Duration:  60000,
 		StartTime: 1000,
 	}
 	mockConn.On("ReadMessage").Return(1, []byte("test byte array"), nil)
@@ -58,7 +59,7 @@ func cleanup(sessionID string) {
 
 func TestCreateNewUserAndSession(t *testing.T) {
 	var newSessionData = StartTimerReq{
-		Duration: 60000,
+		Duration:  60000,
 		StartTime: 1000,
 	}
 	var newUser = User{
@@ -66,12 +67,12 @@ func TestCreateNewUserAndSession(t *testing.T) {
 	}
 
 	var expected = Session{
-		SessionID: "mocked-id-0",
+		SessionID:     "mocked-id-0",
 		CurrentDriver: newUser,
-		Duration: newSessionData.Duration,
-		StartTime: newSessionData.StartTime,
-		EndTime: newSessionData.Duration + newSessionData.StartTime,
-		Users: []User{newUser},
+		Duration:      newSessionData.Duration,
+		StartTime:     newSessionData.StartTime,
+		EndTime:       newSessionData.Duration + newSessionData.StartTime,
+		Users:         []User{newUser},
 	}
 
 	actual := CreateNewUserAndSession(
@@ -117,24 +118,23 @@ func TestJoinExistingSession(t *testing.T) {
 	var newUser = User{
 		UUID: "test-uuid2",
 	}
-	
+
 	var sessionToJoin = ExistingSessionReq{
 		JoinSessionID: sessionID,
 	}
 	actual, err := JoinExistingSession(sessionToJoin, newUser)
 
-
 	if err != nil {
 		t.Errorf("Expected: %+v but recieved: %+v", nil, err)
 	}
-	
+
 	var expected = Session{
-		SessionID: sessionID,
+		SessionID:     sessionID,
 		CurrentDriver: existingUser,
-		Duration: existingSessionData.Duration,
-		StartTime: existingSessionData.StartTime,
-		EndTime: existingSessionData.Duration + existingSessionData.StartTime,
-		Users: []User{existingUser, newUser},
+		Duration:      existingSessionData.Duration,
+		StartTime:     existingSessionData.StartTime,
+		EndTime:       existingSessionData.Duration + existingSessionData.StartTime,
+		Users:         []User{existingUser, newUser},
 	}
 
 	if !cmp.Equal(actual, expected, cmpopts.IgnoreFields(User{}, "Conn")) {
@@ -147,11 +147,11 @@ func TestRemoveSession(t *testing.T) {
 	_, _, sessionsLengthBeforeSessionCreated, _ := setup()
 	sessionID := fmt.Sprintf("mocked-id-%d", sessionsLengthBeforeSessionCreated)
 	removeSessionErr := RemoveSession(sessionID)
-	
+
 	if removeSessionErr != nil {
 		t.Errorf("Expected nil but received %+v", removeSessionErr)
 	}
-	
+
 	if len(Sessions) != sessionsLengthBeforeSessionCreated {
 		t.Errorf("Expected %d sessions in Sessions slice but received %d\n with %+v",
 			sessionsLengthBeforeSessionCreated,
@@ -169,7 +169,7 @@ func TestRemoveSession(t *testing.T) {
 
 func TestHandleUpdateSession(t *testing.T) {
 	// take an existing session
-	_, _, sessionIndex, mockConnInitUser := setup();
+	_, _, sessionIndex, mockConnInitUser := setup()
 	// add another user (so we can verify that the function is switching driver correctly
 	sessionID := fmt.Sprintf("mocked-id-%d", sessionIndex)
 	mockConnJoiningUser := &mocks.Connector{}
@@ -178,13 +178,13 @@ func TestHandleUpdateSession(t *testing.T) {
 		UUID: "test-uuid2",
 		Conn: mockConnJoiningUser,
 	}
-	
+
 	var sessionToJoin = ExistingSessionReq{
 		JoinSessionID: sessionID,
 	}
 	testSession, _ := JoinExistingSession(sessionToJoin, newUser)
 	mockUpdateRequest := UpdateRequest{
-		SessionID: testSession.SessionID,
+		SessionID:       testSession.SessionID,
 		UpdatedDuration: testSession.Duration,
 	}
 	// mock broadcast to all sessionUsers
